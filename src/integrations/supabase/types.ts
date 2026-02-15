@@ -47,6 +47,7 @@ export type Database = {
       case_submissions: {
         Row: {
           access_code_used: string
+          analysis_result: Json | null
           created_at: string
           id: string
           narrative: string
@@ -59,6 +60,7 @@ export type Database = {
         }
         Insert: {
           access_code_used: string
+          analysis_result?: Json | null
           created_at?: string
           id?: string
           narrative: string
@@ -71,6 +73,7 @@ export type Database = {
         }
         Update: {
           access_code_used?: string
+          analysis_result?: Json | null
           created_at?: string
           id?: string
           narrative?: string
