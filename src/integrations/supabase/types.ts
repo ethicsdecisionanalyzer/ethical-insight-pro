@@ -14,7 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      access_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          id: string
+          max_uses: number
+          updated_at: string
+          uses_count: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          id?: string
+          max_uses?: number
+          updated_at?: string
+          uses_count?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          id?: string
+          max_uses?: number
+          updated_at?: string
+          uses_count?: number
+        }
+        Relationships: []
+      }
+      case_submissions: {
+        Row: {
+          access_code_used: string
+          created_at: string
+          id: string
+          narrative: string
+          selected_codes: string[]
+          session_id: string
+          stakeholders: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          access_code_used: string
+          created_at?: string
+          id?: string
+          narrative: string
+          selected_codes?: string[]
+          session_id: string
+          stakeholders?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          access_code_used?: string
+          created_at?: string
+          id?: string
+          narrative?: string
+          selected_codes?: string[]
+          session_id?: string
+          stakeholders?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      code_redemptions: {
+        Row: {
+          code_id: string
+          created_at: string
+          id: string
+          session_id: string
+        }
+        Insert: {
+          code_id: string
+          created_at?: string
+          id?: string
+          session_id: string
+        }
+        Update: {
+          code_id?: string
+          created_at?: string
+          id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_redemptions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "access_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

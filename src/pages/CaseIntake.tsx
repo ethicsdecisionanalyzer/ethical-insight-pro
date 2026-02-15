@@ -6,7 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Spinner } from "@/components/ui/spinner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { professionalCodes } from "@/lib/mockData";
+import { professionalCodes, submitCase } from "@/services/database";
+import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -29,12 +30,6 @@ const CaseIntake = () => {
   const sessionId = searchParams.get("session_id");
   const accessCode = searchParams.get("code") || "";
 
-  // Redirect if no valid session
-  if (!codeId || !sessionId) {
-    navigate("/");
-    return null;
-  }
-
   const [title, setTitle] = useState("");
   const [narrative, setNarrative] = useState("");
   const [stakeholders, setStakeholders] = useState("");
@@ -44,6 +39,11 @@ const CaseIntake = () => {
   const [showExampleModal, setShowExampleModal] = useState(false);
 
   const isFormValid = title.trim() && narrative.trim() && selectedCodes.length > 0;
+
+  if (!codeId || !sessionId) {
+    navigate("/");
+    return null;
+  }
 
   const handleCodeToggle = (codeId: string) => {
     setSelectedCodes((prev) =>
@@ -58,16 +58,26 @@ const CaseIntake = () => {
 
     setSubmissionState("submitting");
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      await submitCase({
+        title,
+        narrative,
+        stakeholders: stakeholders || undefined,
+        selected_codes: selectedCodes,
+        access_code_used: accessCode,
+        session_id: sessionId,
+      });
 
-    // In a real app, this would create a CaseSubmission record
-    setSubmissionState("success");
+      setSubmissionState("success");
 
-    // Redirect after showing success (for now, back to home with message)
-    setTimeout(() => {
-      navigate("/?submitted=true");
-    }, 2000);
+      setTimeout(() => {
+        navigate("/?submitted=true");
+      }, 2000);
+    } catch (err) {
+      console.error("Submission error:", err);
+      toast({ title: "Error", description: "Failed to submit case. Please try again.", variant: "destructive" });
+      setSubmissionState("idle");
+    }
   };
 
   const handleCancel = () => {
@@ -85,7 +95,6 @@ const CaseIntake = () => {
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            {/* Success Banner */}
             {submissionState === "success" && (
               <div className="alert-success mb-6 flex items-center gap-3 animate-fade-in">
                 <CheckCircle className="w-5 h-5 shrink-0" />
@@ -232,7 +241,6 @@ const CaseIntake = () => {
 
               {/* Sidebar */}
               <div className="space-y-6">
-                {/* Help Card */}
                 <div className="card-professional p-5">
                   <div className="flex items-center gap-2 mb-4">
                     <HelpCircle className="w-5 h-5 text-primary" />
@@ -260,7 +268,6 @@ const CaseIntake = () => {
                   </button>
                 </div>
 
-                {/* Privacy Notice */}
                 <div className="card-professional p-5 bg-muted/50">
                   <div className="flex items-center gap-2 mb-2">
                     <Lock className="w-4 h-4 text-muted-foreground" />
