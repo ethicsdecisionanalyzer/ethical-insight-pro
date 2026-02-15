@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { validateAccessCode, generateSessionId, incrementCodeUsage } from "@/lib/mockData";
+import { validateAccessCode, incrementCodeUsage, generateSessionId } from "@/services/database";
+import { toast } from "@/hooks/use-toast";
 
 type ValidationState = "idle" | "loading" | "success" | "error";
 
@@ -19,21 +20,23 @@ const Index = () => {
 
     setValidationState("loading");
 
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const validCode = await validateAccessCode(accessCode);
 
-    const validCode = validateAccessCode(accessCode);
+      if (validCode) {
+        const sessionId = generateSessionId();
+        await incrementCodeUsage(validCode.id, sessionId);
+        setValidationState("success");
 
-    if (validCode) {
-      incrementCodeUsage(validCode.id);
-      const sessionId = generateSessionId();
-      setValidationState("success");
-
-      // Redirect after showing success message
-      setTimeout(() => {
-        navigate(`/case-intake?code_id=${validCode.id}&session_id=${sessionId}&code=${validCode.code}`);
-      }, 1000);
-    } else {
+        setTimeout(() => {
+          navigate(`/case-intake?code_id=${validCode.id}&session_id=${sessionId}&code=${validCode.code}`);
+        }, 1000);
+      } else {
+        setValidationState("error");
+      }
+    } catch (err) {
+      console.error("Validation error:", err);
+      toast({ title: "Error", description: "Something went wrong. Please try again.", variant: "destructive" });
       setValidationState("error");
     }
   };
@@ -83,7 +86,6 @@ const Index = () => {
                 disabled={validationState === "loading" || validationState === "success"}
               />
 
-              {/* Validate Button */}
               <Button
                 onClick={handleValidate}
                 disabled={!accessCode.trim() || validationState === "loading" || validationState === "success"}
@@ -99,7 +101,6 @@ const Index = () => {
                 )}
               </Button>
 
-              {/* Error State */}
               {validationState === "error" && (
                 <div className="alert-error flex items-start gap-2 animate-fade-in">
                   <span className="shrink-0">❌</span>
@@ -107,7 +108,6 @@ const Index = () => {
                 </div>
               )}
 
-              {/* Success State */}
               {validationState === "success" && (
                 <div className="alert-success flex items-start gap-2 animate-fade-in">
                   <span className="shrink-0">✓</span>
@@ -117,7 +117,6 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Help text */}
           <p className="text-center text-sm text-muted-foreground mt-6">
             Find your access code on the inside cover of your textbook.
           </p>
