@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, AlertTriangle, CheckCircle, Shield, Scale, Heart, Users, Eye, Lightbulb } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Header } from "@/components/layout/Header";
@@ -8,32 +8,17 @@ import { Footer } from "@/components/layout/Footer";
 import { getCaseById, CaseSubmission } from "@/services/database";
 import type { EthicsAnalysis } from "@/services/aiAnalysis";
 
-const LENS_META: Record<string, { label: string; icon: React.ReactNode; description: string }> = {
-  duty: { label: "Duty / Deontological", icon: <Shield className="w-5 h-5" />, description: "Professional obligations and codes" },
-  utilitarian: { label: "Utilitarian", icon: <Users className="w-5 h-5" />, description: "Greatest good for greatest number" },
-  rights: { label: "Rights-Based", icon: <Scale className="w-5 h-5" />, description: "Individual rights protection" },
-  justice: { label: "Justice / Fairness", icon: <Scale className="w-5 h-5" />, description: "Equitable treatment" },
-  virtue: { label: "Virtue Ethics", icon: <Eye className="w-5 h-5" />, description: "Character and integrity" },
-  care: { label: "Care Ethics", icon: <Heart className="w-5 h-5" />, description: "Relationships and vulnerable populations" },
-};
+import { ResultsHeader } from "@/components/results/ResultsHeader";
+import { ConflictAlert } from "@/components/results/ConflictAlert";
+import { LensCard } from "@/components/results/LensCard";
+import { CodeImplications } from "@/components/results/CodeImplications";
+import { LensRadarChart } from "@/components/results/LensRadarChart";
+import { RecommendationsSection } from "@/components/results/RecommendationsSection";
+import { WarningFlags } from "@/components/results/WarningFlags";
+import { ResultsFooterActions } from "@/components/results/ResultsFooterActions";
+import { Scale } from "lucide-react";
 
-const stabilityColors: Record<string, string> = {
-  robust: "bg-green-100 text-green-800 border-green-300",
-  stable: "bg-yellow-100 text-yellow-800 border-yellow-300",
-  unstable: "bg-red-100 text-red-800 border-red-300",
-};
-
-const conflictLabels: Record<number, string> = {
-  1: "Minor Tension",
-  2: "Significant Conflict",
-  3: "Ethical Dilemma",
-};
-
-function scoreColor(score: number): string {
-  if (score >= 7) return "bg-green-500";
-  if (score >= 4) return "bg-yellow-500";
-  return "bg-red-500";
-}
+const POLL_INTERVAL = 3000;
 
 const Results = () => {
   const navigate = useNavigate();
@@ -45,6 +30,7 @@ const Results = () => {
   const [analysis, setAnalysis] = useState<EthicsAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!caseId || !sessionId) {
@@ -63,18 +49,45 @@ const Results = () => {
         setCaseData(data);
         if (data.analysis_result) {
           setAnalysis(data.analysis_result as unknown as EthicsAnalysis);
+          setLoading(false);
+          // Stop polling once we have results
+          if (pollRef.current) clearInterval(pollRef.current);
         } else {
-          setError("Analysis not yet available. Please check back shortly.");
+          // Start polling if analysis not ready
+          setLoading(false);
+          if (!pollRef.current) {
+            pollRef.current = setInterval(async () => {
+              try {
+                const updated = await getCaseById(caseId, sessionId);
+                if (updated?.analysis_result) {
+                  setCaseData(updated);
+                  setAnalysis(updated.analysis_result as unknown as EthicsAnalysis);
+                  if (pollRef.current) clearInterval(pollRef.current);
+                  pollRef.current = null;
+                }
+              } catch {
+                // Silently retry
+              }
+            }, POLL_INTERVAL);
+          }
         }
       } catch {
         setError("Failed to load case data.");
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     loadCase();
+
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
   }, [caseId, sessionId, navigate]);
 
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-background-light">
@@ -90,18 +103,17 @@ const Results = () => {
     );
   }
 
-  if (error || !analysis) {
+  // Error state
+  if (error) {
     return (
       <div className="min-h-screen flex flex-col bg-background-light">
         <Header variant="page" />
         <main className="flex-1 flex items-center justify-center px-4">
           <div className="text-center max-w-md">
             <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-foreground mb-2">
-              {error || "Analysis not available"}
-            </h2>
-            <Button onClick={() => navigate("/")} variant="outline" className="mt-4">
-              <ArrowLeft className="w-4 h-4 mr-2" />
+            <h2 className="text-xl font-semibold text-foreground mb-2">{error}</h2>
+            <Button onClick={() => navigate("/")} variant="outline" className="mt-4 gap-2">
+              <ArrowLeft className="w-4 h-4" />
               Return Home
             </Button>
           </div>
@@ -111,170 +123,74 @@ const Results = () => {
     );
   }
 
+  // Waiting for analysis (polling)
+  if (!analysis && caseData) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background-light">
+        <Header variant="page" />
+        <main className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center max-w-md">
+            <Spinner size="lg" className="mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-foreground mb-2">Analysis in Progress</h2>
+            <p className="text-sm text-muted-foreground mb-1">
+              Your case "<span className="font-medium">{caseData.title}</span>" is being analyzed across six ethical lenses.
+            </p>
+            <p className="text-xs text-muted-foreground">This page will update automatically when results are ready.</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!analysis || !caseData) return null;
+
   return (
-    <div className="min-h-screen flex flex-col bg-background-light">
+    <div className="min-h-screen flex flex-col bg-background-light print:bg-white">
       <Header variant="page" />
 
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            {/* Back + Title */}
-            <div className="mb-6">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="mb-3">
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Back
-              </Button>
-              <h1 className="text-2xl font-bold text-foreground mb-1">
-                Ethics Analysis Results
-              </h1>
-              <p className="text-muted-foreground text-sm">
-                {caseData?.title}
-              </p>
-            </div>
+            {/* Back button */}
+            <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="mb-4 gap-1 print:hidden">
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
 
-            {/* Summary Banner */}
-            <div className="card-professional-elevated p-6 mb-6">
-              <div className="flex flex-wrap items-center gap-6">
-                {/* Composite Score */}
-                <div className="text-center">
-                  <div className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold ${scoreColor(analysis.compositeScore)}`}>
-                    {analysis.compositeScore}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">Composite Score</p>
-                </div>
+            <h1 className="text-2xl font-bold text-foreground mb-6">Ethics Analysis Results</h1>
 
-                {/* Stability + Conflict */}
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium border ${stabilityColors[analysis.ethicalStability]}`}>
-                      {analysis.ethicalStability.charAt(0).toUpperCase() + analysis.ethicalStability.slice(1)}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      Conflict Level {analysis.conflictLevel}: {conflictLabels[analysis.conflictLevel]}
-                    </span>
-                  </div>
-                  {analysis.warningFlags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {analysis.warningFlags.map((flag, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-50 text-red-700 border border-red-200">
-                          <AlertTriangle className="w-3 h-3" />
-                          {flag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            {/* Header with score, case info, stability */}
+            <ResultsHeader caseData={caseData} analysis={analysis} />
 
-            {/* Lens Scores Grid */}
+            {/* Conflict alert banner */}
+            <ConflictAlert analysis={analysis} />
+
+            {/* Warning flags */}
+            <WarningFlags analysis={analysis} />
+
+            {/* Radar chart */}
+            <LensRadarChart analysis={analysis} />
+
+            {/* Six lens cards */}
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Scale className="w-5 h-5 text-primary" />
+              Six-Lens Ethical Analysis
+            </h2>
             <div className="grid md:grid-cols-2 gap-4 mb-6">
-              {Object.entries(analysis.lensScores).map(([key, lens]) => {
-                const meta = LENS_META[key];
-                return (
-                  <div key={key} className="card-professional p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-primary">{meta.icon}</span>
-                      <div>
-                        <h3 className="font-semibold text-foreground text-sm">{meta.label}</h3>
-                        <p className="text-xs text-muted-foreground">{meta.description}</p>
-                      </div>
-                      <div className="ml-auto">
-                        <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-white font-bold text-sm ${scoreColor(lens.score)}`}>
-                          {lens.score}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-sm text-foreground mb-2">{lens.reasoning}</p>
-                    {lens.codeInfluence && (
-                      <p className="text-xs text-primary bg-primary/5 rounded p-2 mt-2">
-                        <strong>Code Influence:</strong> {lens.codeInfluence}
-                      </p>
-                    )}
-                    {lens.codeConstraint && (
-                      <p className="text-xs text-red-700 bg-red-50 rounded p-2 mt-2">
-                        ⚠️ Score constrained by professional code violation
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
+              {Object.entries(analysis.lensScores).map(([key, lens]) => (
+                <LensCard key={key} lensKey={key} lens={lens} />
+              ))}
             </div>
 
-            {/* Conflict Analysis */}
-            <div className="card-professional p-6 mb-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <Scale className="w-5 h-5 text-primary" />
-                Conflict Analysis
-              </h2>
-
-              {analysis.conflictAnalysis.primaryTensions.length > 0 && (
-                <div className="mb-4">
-                  <h3 className="text-sm font-medium text-foreground mb-2">Primary Tensions</h3>
-                  <ul className="space-y-2">
-                    {analysis.conflictAnalysis.primaryTensions.map((t, i) => (
-                      <li key={i} className="text-sm text-foreground flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-                        {t}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {Object.keys(analysis.conflictAnalysis.professionalCodeImplications).length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium text-foreground mb-2">Professional Code Implications</h3>
-                  <div className="space-y-3">
-                    {Object.entries(analysis.conflictAnalysis.professionalCodeImplications).map(([code, implication]) => (
-                      <div key={code} className="bg-muted/50 rounded-lg p-3">
-                        <span className="font-medium text-sm text-primary">{code}</span>
-                        <p className="text-sm text-foreground mt-1">{implication}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Professional code implications (collapsible) */}
+            <CodeImplications analysis={analysis} />
 
             {/* Recommendations + Reflection */}
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="card-professional p-5">
-                <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  Recommended Actions
-                </h3>
-                <ul className="space-y-2">
-                  {analysis.recommendedActions.map((action, i) => (
-                    <li key={i} className="text-sm text-foreground flex items-start gap-2">
-                      <span className="text-green-600 mt-0.5">•</span>
-                      {action}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            <RecommendationsSection analysis={analysis} />
 
-              <div className="card-professional p-5">
-                <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Lightbulb className="w-5 h-5 text-yellow-600" />
-                  Questions for Reflection
-                </h3>
-                <ul className="space-y-2">
-                  {analysis.questionsForReflection.map((q, i) => (
-                    <li key={i} className="text-sm text-foreground flex items-start gap-2">
-                      <span className="text-yellow-600 mt-0.5">?</span>
-                      {q}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            <div className="text-center">
-              <Button onClick={() => navigate("/")} variant="outline">
-                Submit Another Case
-              </Button>
-            </div>
+            {/* Footer actions */}
+            <ResultsFooterActions />
           </div>
         </div>
       </main>
