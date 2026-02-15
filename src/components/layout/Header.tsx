@@ -10,7 +10,7 @@ export function Header({ variant = "landing", accessCode }: HeaderProps) {
     return (
       <header className="pt-12 pb-8 text-center">
         <p className="text-sm text-muted-foreground mb-2 tracking-wide uppercase">
-          Wiley Publishing
+          Companion Tool
         </p>
         <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
           Ethical Decision-Making Analyzer
