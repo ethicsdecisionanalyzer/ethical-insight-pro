@@ -7,6 +7,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { professionalCodes, submitCase } from "@/services/database";
+import { analyzeCase } from "@/services/aiAnalysis";
 import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -17,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-type SubmissionState = "idle" | "submitting" | "success";
+type SubmissionState = "idle" | "submitting" | "analyzing" | "success";
 
 const TITLE_MAX_LENGTH = 200;
 const NARRATIVE_MAX_LENGTH = 5000;
@@ -59,7 +60,7 @@ const CaseIntake = () => {
     setSubmissionState("submitting");
 
     try {
-      await submitCase({
+      const submission = await submitCase({
         title,
         narrative,
         stakeholders: stakeholders || undefined,
@@ -68,11 +69,37 @@ const CaseIntake = () => {
         session_id: sessionId,
       });
 
-      setSubmissionState("success");
+      setSubmissionState("analyzing");
 
-      setTimeout(() => {
-        navigate("/?submitted=true");
-      }, 2000);
+      try {
+        const analysis = await analyzeCase({
+          title,
+          narrative,
+          stakeholders: stakeholders || "",
+          selectedCodes,
+        });
+
+        // Store analysis result in DB
+        const { supabase } = await import("@/integrations/supabase/client");
+        await supabase
+          .from("case_submissions")
+          .update({ analysis_result: JSON.parse(JSON.stringify(analysis)), status: "analyzed" })
+          .eq("id", submission.id);
+
+        setSubmissionState("success");
+
+        setTimeout(() => {
+          navigate(`/results?case_id=${submission.id}&session_id=${sessionId}`);
+        }, 1500);
+      } catch (analysisErr) {
+        console.error("Analysis error:", analysisErr);
+        // Still mark as success - case was submitted even if analysis failed
+        setSubmissionState("success");
+        toast({ title: "Note", description: "Case submitted but analysis is pending. You can view results later." });
+        setTimeout(() => {
+          navigate("/?submitted=true");
+        }, 2000);
+      }
     } catch (err) {
       console.error("Submission error:", err);
       toast({ title: "Error", description: "Failed to submit case. Please try again.", variant: "destructive" });
@@ -230,6 +257,11 @@ const CaseIntake = () => {
                         <>
                           <Spinner size="sm" className="mr-2" />
                           Submitting...
+                        </>
+                      ) : submissionState === "analyzing" ? (
+                        <>
+                          <Spinner size="sm" className="mr-2" />
+                          Analyzing with AI...
                         </>
                       ) : (
                         "Submit Case for Analysis"

@@ -22,6 +22,7 @@ export interface CaseSubmission {
   status: string;
   created_at: string;
   updated_at: string;
+  analysis_result: Record<string, unknown> | null;
 }
 
 export interface CaseSubmissionData {
