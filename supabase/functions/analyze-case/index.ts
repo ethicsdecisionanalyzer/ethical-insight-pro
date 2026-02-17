@@ -114,6 +114,99 @@ Analyze this case and return ONLY valid JSON matching this exact structure (no m
 
 Remember: Apply the scoring constraint rules. If a professional code is clearly being violated, cap Duty and Rights at 4 and mark as unstable.`;
 
+// ===== DETERMINISTIC GUARDRAILS (Algorithm v1.2) =====
+// Enforces Mark's spec rules AFTER AI generates reasoning.
+// The AI provides rich narrative; this layer enforces hard constraints.
+
+function clampScore(score: unknown): number {
+  const n = Number(score);
+  if (isNaN(n)) return 5;
+  return Math.max(1, Math.min(10, Math.round(n)));
+}
+
+function applyGuardrails(raw: Record<string, unknown>): Record<string, unknown> {
+  const lensScores = (raw.lensScores ?? {}) as Record<string, Record<string, unknown>>;
+  const lensKeys = ["duty", "utilitarian", "rights", "justice", "virtue", "care"];
+
+  // 1. Clamp all scores to 1-10 integers
+  for (const key of lensKeys) {
+    if (lensScores[key]) {
+      lensScores[key].score = clampScore(lensScores[key].score);
+    } else {
+      lensScores[key] = { score: 5, reasoning: "No data provided by analysis." };
+    }
+  }
+
+  // 2. Detect code violations (AI flags codeConstraint=true on rights or duty)
+  const hasCodeViolation =
+    lensScores.duty?.codeConstraint === true ||
+    lensScores.rights?.codeConstraint === true ||
+    (raw.warningFlags as string[] ?? []).some(
+      (f: string) => typeof f === "string" && f.toLowerCase().includes("violation")
+    );
+
+  // 3. If code violation detected, cap Duty and Rights at 4
+  if (hasCodeViolation) {
+    lensScores.duty.score = Math.min(lensScores.duty.score as number, 4);
+    lensScores.duty.codeConstraint = true;
+    lensScores.rights.score = Math.min(lensScores.rights.score as number, 4);
+    lensScores.rights.codeConstraint = true;
+  }
+
+  // 4. Recalculate compositeScore deterministically
+  const scores = lensKeys.map((k) => lensScores[k].score as number);
+  const compositeScore = Math.round((scores.reduce((a, b) => a + b, 0) / 6) * 10) / 10;
+
+  // 5. Determine conflict level from score divergence
+  const maxScore = Math.max(...scores);
+  const minScore = Math.min(...scores);
+  const divergence = maxScore - minScore;
+
+  let conflictLevel: number;
+  if (divergence > 5 || hasCodeViolation) {
+    conflictLevel = 3;
+  } else if (divergence >= 3) {
+    conflictLevel = 2;
+  } else {
+    conflictLevel = 1;
+  }
+
+  // 6. Enforce multi-code conflict minimums
+  const codeImplications = (raw.conflictAnalysis as Record<string, unknown>)?.professionalCodeImplications as Record<string, string> ?? {};
+  const codeCount = Object.keys(codeImplications).length;
+  if (codeCount >= 2) {
+    conflictLevel = Math.max(conflictLevel, 3);
+  } else if (codeCount === 1) {
+    conflictLevel = Math.max(conflictLevel, 2);
+  }
+
+  // 7. Determine ethical stability deterministically
+  let ethicalStability: string;
+  if (conflictLevel === 3 || hasCodeViolation) {
+    ethicalStability = "unstable";
+  } else if (conflictLevel <= 1 && !hasCodeViolation && compositeScore >= 7) {
+    ethicalStability = "robust";
+  } else {
+    ethicalStability = "stable";
+  }
+
+  // 8. Ensure warningFlags is always an array
+  const warningFlags = Array.isArray(raw.warningFlags) ? raw.warningFlags : [];
+  if (hasCodeViolation && !warningFlags.some((f: string) => f.toLowerCase().includes("violation"))) {
+    warningFlags.push("Professional code violation detected — scores constrained by guardrails.");
+  }
+
+  return {
+    ...raw,
+    lensScores,
+    compositeScore,
+    conflictLevel,
+    ethicalStability,
+    warningFlags,
+    _guardrailsApplied: true,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -188,7 +281,10 @@ serve(async (req) => {
 
     const analysis = JSON.parse(analysisJson);
 
-    return new Response(JSON.stringify(analysis), {
+    // ===== POST-PROCESSING GUARDRAILS (Algorithm v1.2) =====
+    const enforced = applyGuardrails(analysis);
+
+    return new Response(JSON.stringify(enforced), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
