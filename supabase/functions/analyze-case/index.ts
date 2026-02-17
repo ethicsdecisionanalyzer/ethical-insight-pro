@@ -11,7 +11,7 @@ const SYSTEM_PROMPT = `You are an expert ethics analysis engine for occupational
 ## YOUR TASK
 Analyze the provided case through all 6 ethical lenses, integrate relevant professional codes, detect conflicts, and return a structured JSON analysis.
 
-## SIX ETHICAL LENSES (each scored 0-10, where 10 = fully ethically justified action)
+## SIX ETHICAL LENSES (each scored 1-10, where 1 = very low ethical alignment, 10 = very high ethical alignment)
 
 1. **Duty / Deontological** - Professional obligations, rules, codes of conduct. What does duty demand?
 2. **Utilitarian / Consequentialist** - Greatest good for greatest number. What produces the best outcomes?
@@ -90,12 +90,12 @@ Analyze this case and return ONLY valid JSON matching this exact structure (no m
 
 {
   "lensScores": {
-    "duty": { "score": <0-10>, "reasoning": "<2-3 sentences>", "codeInfluence": "<how selected professional codes affect this score>" },
-    "utilitarian": { "score": <0-10>, "reasoning": "<2-3 sentences>" },
-    "rights": { "score": <0-10>, "reasoning": "<2-3 sentences>", "codeConstraint": <true if code violation caps this score> },
-    "justice": { "score": <0-10>, "reasoning": "<2-3 sentences>" },
-    "virtue": { "score": <0-10>, "reasoning": "<2-3 sentences>" },
-    "care": { "score": <0-10>, "reasoning": "<2-3 sentences>" }
+    "duty": { "score": <1-10>, "reasoning": "<2-3 sentences>", "codeInfluence": "<how selected professional codes affect this score>" },
+    "utilitarian": { "score": <1-10>, "reasoning": "<2-3 sentences>" },
+    "rights": { "score": <1-10>, "reasoning": "<2-3 sentences>", "codeConstraint": <true if code violation caps this score> },
+    "justice": { "score": <1-10>, "reasoning": "<2-3 sentences>" },
+    "virtue": { "score": <1-10>, "reasoning": "<2-3 sentences>" },
+    "care": { "score": <1-10>, "reasoning": "<2-3 sentences>" }
   },
   "compositeScore": <average of all 6 scores, 1 decimal>,
   "ethicalStability": "<unstable|stable|robust>",
