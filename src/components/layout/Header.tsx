@@ -5,10 +5,9 @@ import { LogOut } from "lucide-react";
 
 interface HeaderProps {
   variant?: "landing" | "page";
-  accessCode?: string;
 }
 
-export function Header({ variant = "landing", accessCode }: HeaderProps) {
+export function Header({ variant = "landing" }: HeaderProps) {
   const { user, profile, signOut } = useAuth();
 
   if (variant === "landing") {
@@ -40,11 +39,6 @@ export function Header({ variant = "landing", accessCode }: HeaderProps) {
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            {accessCode && (
-              <div className="text-sm text-muted-foreground">
-                Access code: <span className="font-mono">{accessCode}</span>
-              </div>
-            )}
             {user && (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">

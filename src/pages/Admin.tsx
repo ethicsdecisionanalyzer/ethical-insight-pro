@@ -1,15 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Ticket,
+  Users,
   CheckCircle,
   FileText,
-  TrendingUp,
+  BookOpen,
   LogOut,
   RotateCcw,
-  XCircle,
   Plus,
-  Search,
+  Edit,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,14 +19,17 @@ import { Spinner } from "@/components/ui/spinner";
 import { Footer } from "@/components/layout/Footer";
 import { toast } from "@/hooks/use-toast";
 import {
-  AccessCode,
   CaseSubmission,
-  searchAccessCodes,
   getRecentSubmissions,
   getAdminStats,
-  createAccessCode,
-  resetAccessCode,
-  deactivateAccessCode,
+  getVerificationQuestions,
+  createVerificationQuestion,
+  updateVerificationQuestion,
+  deleteVerificationQuestion,
+  getAllProfiles,
+  updateUserProfile,
+  VerificationQuestion,
+  UserProfile,
 } from "@/services/database";
 import {
   Dialog,
@@ -42,45 +47,74 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-const ADMIN_PASSWORD = "admin123"; // For demo purposes
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
+  const { user, loading: authLoading, signOut } = useAuth();
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
-  // Dashboard state
-  const [codes, setCodes] = useState<AccessCode[]>([]);
+  // Data state
+  const [questions, setQuestions] = useState<VerificationQuestion[]>([]);
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [submissions, setSubmissions] = useState<CaseSubmission[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [newCode, setNewCode] = useState("");
-  const [newMaxUses, setNewMaxUses] = useState(5);
-  const [addingCode, setAddingCode] = useState(false);
-  const [showResetDialog, setShowResetDialog] = useState(false);
-  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
-  const [selectedCode, setSelectedCode] = useState<AccessCode | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Stats
   const [stats, setStats] = useState({
-    totalCodes: 0,
-    activeCodes: 0,
+    totalUsers: 0,
+    verifiedUsers: 0,
     totalSubmissions: 0,
-    todayRedemptions: 0,
+    activeQuestions: 0,
   });
+
+  // Question form
+  const [showQuestionDialog, setShowQuestionDialog] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<VerificationQuestion | null>(null);
+  const [questionText, setQuestionText] = useState("");
+  const [answerText, setAnswerText] = useState("");
+  const [savingQuestion, setSavingQuestion] = useState(false);
+
+  // Delete dialog
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingQuestion, setDeletingQuestion] = useState<VerificationQuestion | null>(null);
+
+  // Reset usage dialog
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+
+  // Check admin role
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    const checkAdmin = async () => {
+      const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      if (!data) {
+        navigate("/");
+        return;
+      }
+      setIsAdmin(true);
+    };
+    checkAdmin();
+  }, [user, authLoading, navigate]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [codesData, submissionsData, statsData] = await Promise.all([
-        searchAccessCodes(),
+      const [questionsData, profilesData, submissionsData, statsData] = await Promise.all([
+        getVerificationQuestions(),
+        getAllProfiles(),
         getRecentSubmissions(),
         getAdminStats(),
       ]);
-      setCodes(codesData);
+      setQuestions(questionsData);
+      setProfiles(profilesData);
       setSubmissions(submissionsData);
       setStats(statsData);
     } catch (err) {
@@ -91,147 +125,94 @@ const Admin = () => {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      loadData();
-    }
-  }, [isAuthenticated, loadData]);
+    if (isAdmin) loadData();
+  }, [isAdmin, loadData]);
 
-  const filteredCodes = codes.filter((c) =>
-    c.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleLogin = async () => {
-    setLoginLoading(true);
-    setLoginError(false);
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-    } else {
-      setLoginError(true);
-    }
-    setLoginLoading(false);
+  // Question CRUD
+  const openAddQuestion = () => {
+    setEditingQuestion(null);
+    setQuestionText("");
+    setAnswerText("");
+    setShowQuestionDialog(true);
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setPassword("");
+  const openEditQuestion = (q: VerificationQuestion) => {
+    setEditingQuestion(q);
+    setQuestionText(q.question);
+    setAnswerText(q.answer);
+    setShowQuestionDialog(true);
   };
 
-  const handleAddCode = async () => {
-    if (!newCode.trim()) return;
-
-    setAddingCode(true);
+  const handleSaveQuestion = async () => {
+    if (!questionText.trim() || !answerText.trim()) return;
+    setSavingQuestion(true);
     try {
-      await createAccessCode(newCode.toUpperCase(), newMaxUses);
-      setNewCode("");
-      setNewMaxUses(5);
+      if (editingQuestion) {
+        await updateVerificationQuestion(editingQuestion.id, { question: questionText, answer: answerText });
+        toast({ title: "Updated", description: "Verification question updated." });
+      } else {
+        await createVerificationQuestion(questionText, answerText);
+        toast({ title: "Created", description: "Verification question added." });
+      }
+      setShowQuestionDialog(false);
       await loadData();
-      toast({ title: "Success", description: "Access code created." });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to create code.";
-      toast({ title: "Error", description: message, variant: "destructive" });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Error", description: "Failed to save question.", variant: "destructive" });
     }
-    setAddingCode(false);
+    setSavingQuestion(false);
   };
 
-  const handleResetCode = async () => {
-    if (!selectedCode) return;
+  const handleToggleQuestion = async (q: VerificationQuestion) => {
     try {
-      await resetAccessCode(selectedCode.id);
+      await updateVerificationQuestion(q.id, { active: !q.active });
       await loadData();
-      toast({ title: "Success", description: "Code reset successfully." });
+      toast({ title: "Updated", description: `Question ${q.active ? "deactivated" : "activated"}.` });
     } catch {
-      toast({ title: "Error", description: "Failed to reset code.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to toggle question.", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteQuestion = async () => {
+    if (!deletingQuestion) return;
+    try {
+      await deleteVerificationQuestion(deletingQuestion.id);
+      await loadData();
+      toast({ title: "Deleted", description: "Verification question removed." });
+    } catch {
+      toast({ title: "Error", description: "Failed to delete question.", variant: "destructive" });
+    }
+    setShowDeleteDialog(false);
+    setDeletingQuestion(null);
+  };
+
+  // User management
+  const handleResetUsage = async () => {
+    if (!selectedUser) return;
+    try {
+      await updateUserProfile(selectedUser.user_id, { usage_count: 0 });
+      await loadData();
+      toast({ title: "Reset", description: `Usage count reset for ${selectedUser.full_name}.` });
+    } catch {
+      toast({ title: "Error", description: "Failed to reset usage.", variant: "destructive" });
     }
     setShowResetDialog(false);
-    setSelectedCode(null);
+    setSelectedUser(null);
   };
 
-  const handleDeactivateCode = async () => {
-    if (!selectedCode) return;
-    try {
-      await deactivateAccessCode(selectedCode.id);
-      await loadData();
-      toast({ title: "Success", description: "Code deactivated." });
-    } catch {
-      toast({ title: "Error", description: "Failed to deactivate code.", variant: "destructive" });
-    }
-    setShowDeactivateDialog(false);
-    setSelectedCode(null);
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
   };
 
-  // Login Screen
-  if (!isAuthenticated) {
+  if (authLoading || isAdmin === null) {
     return (
-      <div className="min-h-screen flex flex-col bg-background-light">
-        <main className="flex-1 flex items-center justify-center px-4">
-          <div className="w-full max-w-sm">
-            <div className="card-professional-elevated p-8">
-              <h1 className="text-2xl font-bold text-foreground text-center mb-6">
-                Admin Login
-              </h1>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Password
-                  </label>
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setLoginError(false);
-                    }}
-                    onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                    placeholder="Enter admin password"
-                    className="h-12"
-                  />
-                  {loginError && (
-                    <p className="text-destructive text-sm mt-2">
-                      Invalid password. Please try again.
-                    </p>
-                  )}
-                </div>
-
-                <Button
-                  onClick={handleLogin}
-                  disabled={!password || loginLoading}
-                  className="w-full h-12"
-                >
-                  {loginLoading ? (
-                    <>
-                      <Spinner size="sm" className="mr-2" />
-                      Logging in...
-                    </>
-                  ) : (
-                    "Login"
-                  )}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate("/")}
-                  className="w-full"
-                >
-                  ← Back to Home
-                </Button>
-              </div>
-
-              <p className="text-xs text-muted-foreground text-center mt-6">
-                Demo password: admin123
-              </p>
-            </div>
-          </div>
-        </main>
-        <Footer />
+      <div className="min-h-screen flex items-center justify-center bg-background-light">
+        <Spinner size="lg" />
       </div>
     );
   }
 
-  // Dashboard
   return (
     <div className="min-h-screen flex flex-col bg-background-light">
       {/* Header */}
@@ -265,182 +246,196 @@ const Admin = () => {
             <>
               {/* Stats Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <StatCard icon={<Ticket className="w-6 h-6" />} value={stats.totalCodes} label="Total Access Codes" color="default" />
-                <StatCard icon={<CheckCircle className="w-6 h-6" />} value={stats.activeCodes} label="Active Codes" color="success" />
+                <StatCard icon={<Users className="w-6 h-6" />} value={stats.totalUsers} label="Total Users" color="default" />
+                <StatCard icon={<CheckCircle className="w-6 h-6" />} value={stats.verifiedUsers} label="Verified Users" color="success" />
                 <StatCard icon={<FileText className="w-6 h-6" />} value={stats.totalSubmissions} label="Cases Submitted" color="default" />
-                <StatCard icon={<TrendingUp className="w-6 h-6" />} value={stats.todayRedemptions} label="Today's Redemptions" color="primary" />
+                <StatCard icon={<BookOpen className="w-6 h-6" />} value={stats.activeQuestions} label="Active Questions" color="primary" />
               </div>
 
-              {/* Add New Code */}
-              <div className="card-professional p-6 mb-8">
-                <h2 className="text-lg font-semibold text-foreground mb-4">Add New Access Code</h2>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Input
-                    value={newCode}
-                    onChange={(e) => setNewCode(e.target.value.toUpperCase())}
-                    placeholder="BOOK-2026-XXXX"
-                    className="font-mono flex-1"
-                  />
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm text-muted-foreground whitespace-nowrap">Max uses:</label>
-                    <Input
-                      type="number"
-                      value={newMaxUses}
-                      onChange={(e) => setNewMaxUses(parseInt(e.target.value) || 5)}
-                      min={1}
-                      max={100}
-                      className="w-20"
-                    />
-                  </div>
-                  <Button onClick={handleAddCode} disabled={!newCode.trim() || addingCode}>
-                    {addingCode ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Code
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
+              <Tabs defaultValue="questions" className="space-y-6">
+                <TabsList>
+                  <TabsTrigger value="questions">Verification Questions</TabsTrigger>
+                  <TabsTrigger value="users">Users</TabsTrigger>
+                  <TabsTrigger value="submissions">Submissions</TabsTrigger>
+                </TabsList>
 
-              {/* Access Codes Table */}
-              <div className="card-professional p-6 mb-8">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                  <h2 className="text-lg font-semibold text-foreground">Manage Access Codes</h2>
-                  <div className="relative w-full sm:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search by code..."
-                      className="pl-9"
-                    />
-                  </div>
-                </div>
+                {/* Verification Questions Tab */}
+                <TabsContent value="questions">
+                  <div className="card-professional p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-lg font-semibold text-foreground">Verification Questions</h2>
+                      <Button onClick={openAddQuestion} className="gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add Question
+                      </Button>
+                    </div>
 
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Uses</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredCodes.map((code) => (
-                        <TableRow key={code.id} className={!code.active ? "opacity-50" : ""}>
-                          <TableCell className="font-mono font-medium">{code.code}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-primary transition-all"
-                                  style={{ width: `${(code.uses_count / code.max_uses) * 100}%` }}
-                                />
-                              </div>
-                              <span className="text-sm text-muted-foreground">
-                                {code.uses_count} / {code.max_uses}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {code.active ? (
-                              <span className="badge-success">Active</span>
-                            ) : (
-                              <span className="badge-neutral">Inactive</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(code.created_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedCode(code);
-                                  setShowResetDialog(true);
-                                }}
-                              >
-                                <RotateCcw className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedCode(code);
-                                  setShowDeactivateDialog(true);
-                                }}
-                                disabled={!code.active}
-                              >
-                                <XCircle className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-
-              {/* Recent Submissions */}
-              <div className="card-professional p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-foreground">Recent Case Submissions</h2>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Case Title</TableHead>
-                        <TableHead>Code Used</TableHead>
-                        <TableHead>Timestamp</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {submissions.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                            No submissions yet.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        submissions.map((submission) => (
-                          <TableRow key={submission.id}>
-                            <TableCell className="font-medium max-w-[300px] truncate">
-                              {submission.title}
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">
-                              {submission.access_code_used}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {new Date(submission.created_at).toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              {submission.status === "analyzed" ? (
-                                <span className="badge-success">Analyzed</span>
-                              ) : (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                  Submitted
-                                </span>
-                              )}
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Question</TableHead>
+                            <TableHead>Answer</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
+                        </TableHeader>
+                        <TableBody>
+                          {questions.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                No verification questions yet. Add one to enable book verification.
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            questions.map((q) => (
+                              <TableRow key={q.id} className={!q.active ? "opacity-50" : ""}>
+                                <TableCell className="max-w-[300px]">{q.question}</TableCell>
+                                <TableCell className="font-mono text-sm">{q.answer}</TableCell>
+                                <TableCell>
+                                  {q.active ? (
+                                    <span className="badge-success">Active</span>
+                                  ) : (
+                                    <span className="badge-neutral">Inactive</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-1">
+                                    <Button variant="ghost" size="sm" onClick={() => openEditQuestion(q)} title="Edit">
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleToggleQuestion(q)} title={q.active ? "Deactivate" : "Activate"}>
+                                      {q.active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => { setDeletingQuestion(q); setShowDeleteDialog(true); }} title="Delete">
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Users Tab */}
+                <TabsContent value="users">
+                  <div className="card-professional p-6">
+                    <h2 className="text-lg font-semibold text-foreground mb-4">Registered Users</h2>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Profession</TableHead>
+                            <TableHead>Usage</TableHead>
+                            <TableHead>Verified</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {profiles.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                No registered users yet.
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            profiles.map((p) => (
+                              <TableRow key={p.id}>
+                                <TableCell className="font-medium">{p.full_name}</TableCell>
+                                <TableCell className="text-muted-foreground">{p.email}</TableCell>
+                                <TableCell className="text-muted-foreground">{p.profession || "—"}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full bg-primary transition-all"
+                                        style={{ width: `${(p.usage_count / p.max_analyses) * 100}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-sm text-muted-foreground">
+                                      {p.usage_count}/{p.max_analyses}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {p.book_verified ? (
+                                    <span className="badge-success">Yes</span>
+                                  ) : (
+                                    <span className="badge-neutral">No</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => { setSelectedUser(p); setShowResetDialog(true); }}
+                                    title="Reset usage"
+                                  >
+                                    <RotateCcw className="w-4 h-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Submissions Tab */}
+                <TabsContent value="submissions">
+                  <div className="card-professional p-6">
+                    <h2 className="text-lg font-semibold text-foreground mb-4">Recent Case Submissions</h2>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Case Title</TableHead>
+                            <TableHead>Timestamp</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {submissions.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                                No submissions yet.
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            submissions.map((submission) => (
+                              <TableRow key={submission.id}>
+                                <TableCell className="font-medium max-w-[300px] truncate">
+                                  {submission.title}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {new Date(submission.created_at).toLocaleString()}
+                                </TableCell>
+                                <TableCell>
+                                  {submission.status === "analyzed" ? (
+                                    <span className="badge-success">Analyzed</span>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                      Submitted
+                                    </span>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </>
           )}
         </div>
@@ -448,36 +443,70 @@ const Admin = () => {
 
       <Footer />
 
-      {/* Reset Dialog */}
-      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+      {/* Add/Edit Question Dialog */}
+      <Dialog open={showQuestionDialog} onOpenChange={setShowQuestionDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reset Access Code?</DialogTitle>
+            <DialogTitle>{editingQuestion ? "Edit" : "Add"} Verification Question</DialogTitle>
             <DialogDescription>
-              Reset code <span className="font-mono font-medium">{selectedCode?.code}</span>? 
-              This will set uses to 0 and reactivate it.
+              This question will be shown to users during book verification.
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Question</label>
+              <Input
+                value={questionText}
+                onChange={(e) => setQuestionText(e.target.value)}
+                placeholder="e.g., What is the title of Chapter 3?"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Expected Answer</label>
+              <Input
+                value={answerText}
+                onChange={(e) => setAnswerText(e.target.value)}
+                placeholder="The exact answer (case-insensitive match)"
+              />
+            </div>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowResetDialog(false)}>Cancel</Button>
-            <Button onClick={handleResetCode}>Reset Code</Button>
+            <Button variant="outline" onClick={() => setShowQuestionDialog(false)}>Cancel</Button>
+            <Button onClick={handleSaveQuestion} disabled={!questionText.trim() || !answerText.trim() || savingQuestion}>
+              {savingQuestion ? <Spinner size="sm" /> : editingQuestion ? "Update" : "Add Question"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Deactivate Dialog */}
-      <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
+      {/* Delete Question Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Deactivate Access Code?</DialogTitle>
+            <DialogTitle>Delete Question?</DialogTitle>
             <DialogDescription>
-              Deactivate code <span className="font-mono font-medium">{selectedCode?.code}</span>? 
-              Users will no longer be able to use it.
+              This will permanently remove this verification question.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeactivateCode}>Deactivate</Button>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteQuestion}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Usage Dialog */}
+      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Usage Count?</DialogTitle>
+            <DialogDescription>
+              Reset usage for <span className="font-medium">{selectedUser?.full_name}</span>? This will set their analysis count back to 0.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowResetDialog(false)}>Cancel</Button>
+            <Button onClick={handleResetUsage}>Reset</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

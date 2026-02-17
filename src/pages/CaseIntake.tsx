@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FileText, HelpCircle, Lock, CheckCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,14 +27,7 @@ const NARRATIVE_MAX_LENGTH = 5000;
 
 const CaseIntake = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { user, profile, refreshProfile, loading: authLoading } = useAuth();
-
-  // Legacy access code params
-  const codeId = searchParams.get("code_id");
-  const legacySessionId = searchParams.get("session_id");
-  const accessCode = searchParams.get("code") || "";
-  const isLegacyMode = !!codeId && !!legacySessionId;
 
   const [title, setTitle] = useState("");
   const [narrative, setNarrative] = useState("");
@@ -48,19 +41,13 @@ const CaseIntake = () => {
 
   const isFormValid = title.trim() && narrative.trim() && selectedCodes.length > 0 && consentNoConfidential && consentAggregateUse;
 
-  // Auth mode: check if user is logged in
-  if (!authLoading && !user && !isLegacyMode) {
+  // Require auth
+  if (!authLoading && !user) {
     navigate("/");
     return null;
   }
 
-  // Legacy mode: validate params
-  if (isLegacyMode && (!codeId || !legacySessionId)) {
-    navigate("/");
-    return null;
-  }
-
-  // Usage limit check for auth users
+  // Usage limit check
   const usageExceeded = profile && profile.usage_count >= profile.max_analyses;
 
   const handleCodeToggle = (codeId: string) => {
@@ -72,16 +59,15 @@ const CaseIntake = () => {
   };
 
   const handleSubmit = async () => {
-    if (!isFormValid) return;
+    if (!isFormValid || !user) return;
 
-    if (!isLegacyMode && usageExceeded) {
+    if (usageExceeded) {
       toast({ title: "Limit Reached", description: "You've used all your available analyses.", variant: "destructive" });
       return;
     }
 
     setSubmissionState("submitting");
-
-    const sessionId = isLegacyMode ? legacySessionId! : generateSessionId();
+    const sessionId = generateSessionId();
 
     try {
       const submission = await submitCase({
@@ -89,27 +75,19 @@ const CaseIntake = () => {
         narrative,
         stakeholders: stakeholders || undefined,
         selected_codes: selectedCodes,
-        access_code_used: isLegacyMode ? accessCode : "registered-user",
         session_id: sessionId,
         consent_no_confidential: consentNoConfidential,
         consent_aggregate_use: consentAggregateUse,
+        user_id: user.id,
       });
 
-      // Link to user if authenticated
-      if (user) {
-        await supabase
-          .from("case_submissions")
-          .update({ user_id: user.id })
-          .eq("id", submission.id);
+      // Increment usage count
+      await supabase
+        .from("profiles")
+        .update({ usage_count: (profile?.usage_count || 0) + 1 })
+        .eq("user_id", user.id);
 
-        // Increment usage count
-        await supabase
-          .from("profiles")
-          .update({ usage_count: (profile?.usage_count || 0) + 1 })
-          .eq("user_id", user.id);
-
-        await refreshProfile();
-      }
+      await refreshProfile();
 
       setSubmissionState("analyzing");
 
@@ -135,7 +113,7 @@ const CaseIntake = () => {
         console.error("Analysis error:", analysisErr);
         setSubmissionState("success");
         toast({ title: "Note", description: "Case submitted but analysis is pending. You can view results later." });
-        setTimeout(() => navigate("/?submitted=true"), 2000);
+        setTimeout(() => navigate("/"), 2000);
       }
     } catch (err) {
       console.error("Submission error:", err);
@@ -154,13 +132,13 @@ const CaseIntake = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background-light">
-      <Header variant="page" accessCode={isLegacyMode ? accessCode : undefined} />
+      <Header variant="page" />
 
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             {/* Usage limit warning */}
-            {!isLegacyMode && usageExceeded && (
+            {usageExceeded && (
               <div className="mb-6 p-4 rounded-lg border border-warning/50 bg-warning/5 flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
                 <div>
@@ -172,8 +150,8 @@ const CaseIntake = () => {
               </div>
             )}
 
-            {/* Usage counter for auth users */}
-            {!isLegacyMode && profile && !usageExceeded && (
+            {/* Usage counter */}
+            {profile && !usageExceeded && (
               <div className="mb-4 text-sm text-muted-foreground">
                 Analyses used: <span className="font-medium text-foreground">{profile.usage_count}</span> / {profile.max_analyses}
               </div>
@@ -393,7 +371,7 @@ const CaseIntake = () => {
                     <h3 className="font-medium text-foreground text-sm">Privacy Notice</h3>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Your case is stored securely and identified only by session ID. No personal information is required.
+                    Your case is stored securely and linked to your account. No personal information is shared externally.
                   </p>
                 </div>
               </div>
@@ -410,7 +388,7 @@ const CaseIntake = () => {
           <DialogHeader>
             <DialogTitle>Cancel Submission?</DialogTitle>
             <DialogDescription>
-              Are you sure you want to cancel? Your case details will be lost.
+              Are you sure you want to cancel? Your progress will be lost.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -426,34 +404,31 @@ const CaseIntake = () => {
 
       {/* Example Case Modal */}
       <Dialog open={showExampleModal} onOpenChange={setShowExampleModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
+              <FileText className="w-5 h-5 text-primary" />
               Example Ethics Case
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 text-sm">
             <div>
-              <h4 className="font-medium text-sm text-muted-foreground mb-1">Title</h4>
-              <p className="text-foreground">Pressure to Delay Benzene Exposure Report</p>
-            </div>
-            <div>
-              <h4 className="font-medium text-sm text-muted-foreground mb-1">Case Description</h4>
-              <p className="text-foreground text-sm leading-relaxed">
-                During routine air quality testing, I discovered benzene levels that exceed OSHA limits by 40%. 
-                Management wants me to label the report as "preliminary findings" and delay official reporting 
-                until after the annual safety audit in 3 months. They've implied my contract renewal depends on 
-                cooperation. Workers are currently exposed daily to these levels.
+              <p className="font-medium text-foreground mb-1">Title:</p>
+              <p className="text-muted-foreground">
+                Reporting Unsafe Conditions vs. Job Security
               </p>
             </div>
             <div>
-              <h4 className="font-medium text-sm text-muted-foreground mb-1">Key Stakeholders</h4>
-              <p className="text-foreground text-sm">Factory workers, plant management, OSHA, my professional license</p>
+              <p className="font-medium text-foreground mb-1">Description:</p>
+              <p className="text-muted-foreground">
+                A safety professional discovers significant ventilation deficiencies in a manufacturing facility that could expose workers to harmful chemical concentrations above permissible exposure limits. The plant manager has asked them to delay reporting until after a major production deadline, suggesting that immediate remediation would be too costly and could lead to layoffs. The safety professional must decide whether to report the hazard immediately to regulatory authorities or work within the company's timeline.
+              </p>
             </div>
             <div>
-              <h4 className="font-medium text-sm text-muted-foreground mb-1">Professional Code</h4>
-              <span className="badge-neutral">AIHA/ABIH - Industrial Hygienists</span>
+              <p className="font-medium text-foreground mb-1">Stakeholders:</p>
+              <p className="text-muted-foreground">
+                Workers, Plant Manager, Safety Professional, Regulatory Bodies, Company Owners
+              </p>
             </div>
           </div>
           <DialogFooter>
