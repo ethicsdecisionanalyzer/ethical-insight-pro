@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FileText, HelpCircle, Lock, CheckCircle } from "lucide-react";
+import { FileText, HelpCircle, Lock, CheckCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Spinner } from "@/components/ui/spinner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { professionalCodes, submitCase } from "@/services/database";
+import { professionalCodes, submitCase, generateSessionId } from "@/services/database";
 import { analyzeCase } from "@/services/aiAnalysis";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -26,10 +28,13 @@ const NARRATIVE_MAX_LENGTH = 5000;
 const CaseIntake = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
+  const { user, profile, refreshProfile, loading: authLoading } = useAuth();
+
+  // Legacy access code params
   const codeId = searchParams.get("code_id");
-  const sessionId = searchParams.get("session_id");
+  const legacySessionId = searchParams.get("session_id");
   const accessCode = searchParams.get("code") || "";
+  const isLegacyMode = !!codeId && !!legacySessionId;
 
   const [title, setTitle] = useState("");
   const [narrative, setNarrative] = useState("");
@@ -43,10 +48,20 @@ const CaseIntake = () => {
 
   const isFormValid = title.trim() && narrative.trim() && selectedCodes.length > 0 && consentNoConfidential && consentAggregateUse;
 
-  if (!codeId || !sessionId) {
+  // Auth mode: check if user is logged in
+  if (!authLoading && !user && !isLegacyMode) {
     navigate("/");
     return null;
   }
+
+  // Legacy mode: validate params
+  if (isLegacyMode && (!codeId || !legacySessionId)) {
+    navigate("/");
+    return null;
+  }
+
+  // Usage limit check for auth users
+  const usageExceeded = profile && profile.usage_count >= profile.max_analyses;
 
   const handleCodeToggle = (codeId: string) => {
     setSelectedCodes((prev) =>
@@ -59,7 +74,14 @@ const CaseIntake = () => {
   const handleSubmit = async () => {
     if (!isFormValid) return;
 
+    if (!isLegacyMode && usageExceeded) {
+      toast({ title: "Limit Reached", description: "You've used all your available analyses.", variant: "destructive" });
+      return;
+    }
+
     setSubmissionState("submitting");
+
+    const sessionId = isLegacyMode ? legacySessionId! : generateSessionId();
 
     try {
       const submission = await submitCase({
@@ -67,11 +89,27 @@ const CaseIntake = () => {
         narrative,
         stakeholders: stakeholders || undefined,
         selected_codes: selectedCodes,
-        access_code_used: accessCode,
+        access_code_used: isLegacyMode ? accessCode : "registered-user",
         session_id: sessionId,
         consent_no_confidential: consentNoConfidential,
         consent_aggregate_use: consentAggregateUse,
       });
+
+      // Link to user if authenticated
+      if (user) {
+        await supabase
+          .from("case_submissions")
+          .update({ user_id: user.id })
+          .eq("id", submission.id);
+
+        // Increment usage count
+        await supabase
+          .from("profiles")
+          .update({ usage_count: (profile?.usage_count || 0) + 1 })
+          .eq("user_id", user.id);
+
+        await refreshProfile();
+      }
 
       setSubmissionState("analyzing");
 
@@ -83,8 +121,6 @@ const CaseIntake = () => {
           selectedCodes,
         });
 
-        // Store analysis result in DB
-        const { supabase } = await import("@/integrations/supabase/client");
         await supabase
           .from("case_submissions")
           .update({ analysis_result: JSON.parse(JSON.stringify(analysis)), status: "analyzed" })
@@ -97,12 +133,9 @@ const CaseIntake = () => {
         }, 1500);
       } catch (analysisErr) {
         console.error("Analysis error:", analysisErr);
-        // Still mark as success - case was submitted even if analysis failed
         setSubmissionState("success");
         toast({ title: "Note", description: "Case submitted but analysis is pending. You can view results later." });
-        setTimeout(() => {
-          navigate("/?submitted=true");
-        }, 2000);
+        setTimeout(() => navigate("/?submitted=true"), 2000);
       }
     } catch (err) {
       console.error("Submission error:", err);
@@ -121,11 +154,31 @@ const CaseIntake = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background-light">
-      <Header variant="page" accessCode={accessCode} />
+      <Header variant="page" accessCode={isLegacyMode ? accessCode : undefined} />
 
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
+            {/* Usage limit warning */}
+            {!isLegacyMode && usageExceeded && (
+              <div className="mb-6 p-4 rounded-lg border border-warning/50 bg-warning/5 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-foreground">Analysis Limit Reached</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    You've used all {profile?.max_analyses} of your available analyses. Contact your instructor or administrator to request additional analyses.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Usage counter for auth users */}
+            {!isLegacyMode && profile && !usageExceeded && (
+              <div className="mb-4 text-sm text-muted-foreground">
+                Analyses used: <span className="font-medium text-foreground">{profile.usage_count}</span> / {profile.max_analyses}
+              </div>
+            )}
+
             {submissionState === "success" && (
               <div className="alert-success mb-6 flex items-center gap-3 animate-fade-in">
                 <CheckCircle className="w-5 h-5 shrink-0" />
@@ -163,7 +216,7 @@ const CaseIntake = () => {
                       onChange={(e) => setTitle(e.target.value.slice(0, TITLE_MAX_LENGTH))}
                       placeholder="Brief title for your ethics case"
                       className="input-professional"
-                      disabled={submissionState !== "idle"}
+                      disabled={submissionState !== "idle" || !!usageExceeded}
                     />
                     <div className="flex justify-between mt-1">
                       <p className="text-xs text-muted-foreground">
@@ -189,7 +242,7 @@ const CaseIntake = () => {
 • Who are the stakeholders involved?
 • What concerns you about this situation?`}
                       className="input-professional min-h-[250px] py-3 resize-y"
-                      disabled={submissionState !== "idle"}
+                      disabled={submissionState !== "idle" || !!usageExceeded}
                     />
                     <div className="flex justify-end mt-1">
                       <span className="text-xs text-muted-foreground">
@@ -209,7 +262,7 @@ const CaseIntake = () => {
                       onChange={(e) => setStakeholders(e.target.value)}
                       placeholder="E.g., Workers, Management, Clients, Regulatory Bodies"
                       className="input-professional"
-                      disabled={submissionState !== "idle"}
+                      disabled={submissionState !== "idle" || !!usageExceeded}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       Who is affected by or involved in this decision?
@@ -229,12 +282,12 @@ const CaseIntake = () => {
                             selectedCodes.includes(code.id)
                               ? "border-primary bg-primary/5"
                               : "border-border hover:border-primary/50"
-                          } ${submissionState !== "idle" ? "opacity-60 cursor-not-allowed" : ""}`}
+                          } ${submissionState !== "idle" || usageExceeded ? "opacity-60 cursor-not-allowed" : ""}`}
                         >
                           <Checkbox
                             checked={selectedCodes.includes(code.id)}
                             onCheckedChange={() => handleCodeToggle(code.id)}
-                            disabled={submissionState !== "idle"}
+                            disabled={submissionState !== "idle" || !!usageExceeded}
                           />
                           <span className="text-sm">{code.label}</span>
                         </label>
@@ -252,7 +305,7 @@ const CaseIntake = () => {
                       <Checkbox
                         checked={consentNoConfidential}
                         onCheckedChange={(checked) => setConsentNoConfidential(checked === true)}
-                        disabled={submissionState !== "idle"}
+                        disabled={submissionState !== "idle" || !!usageExceeded}
                         className="mt-0.5"
                       />
                       <span className="text-sm text-muted-foreground">
@@ -263,7 +316,7 @@ const CaseIntake = () => {
                       <Checkbox
                         checked={consentAggregateUse}
                         onCheckedChange={(checked) => setConsentAggregateUse(checked === true)}
-                        disabled={submissionState !== "idle"}
+                        disabled={submissionState !== "idle" || !!usageExceeded}
                         className="mt-0.5"
                       />
                       <span className="text-sm text-muted-foreground">
@@ -284,7 +337,7 @@ const CaseIntake = () => {
                     </Button>
                     <Button
                       onClick={handleSubmit}
-                      disabled={!isFormValid || submissionState !== "idle"}
+                      disabled={!isFormValid || submissionState !== "idle" || !!usageExceeded}
                       className="flex-1 sm:flex-none sm:min-w-[200px] sm:order-2 h-12"
                     >
                       {submissionState === "submitting" ? (

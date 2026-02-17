@@ -1,4 +1,7 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 interface HeaderProps {
   variant?: "landing" | "page";
@@ -6,6 +9,8 @@ interface HeaderProps {
 }
 
 export function Header({ variant = "landing", accessCode }: HeaderProps) {
+  const { user, profile, signOut } = useAuth();
+
   if (variant === "landing") {
     return (
       <header className="pt-12 pb-8 text-center">
@@ -34,11 +39,24 @@ export function Header({ variant = "landing", accessCode }: HeaderProps) {
               <span>Submit Case</span>
             </nav>
           </div>
-          {accessCode && (
-            <div className="text-sm text-muted-foreground">
-              Access code: <span className="font-mono">{accessCode}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {accessCode && (
+              <div className="text-sm text-muted-foreground">
+                Access code: <span className="font-mono">{accessCode}</span>
+              </div>
+            )}
+            {user && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">
+                  {profile?.full_name || user.email}
+                </span>
+                <Button variant="ghost" size="sm" onClick={signOut} className="gap-1 text-muted-foreground">
+                  <LogOut className="w-4 h-4" />
+                  Sign out
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
