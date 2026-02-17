@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, HelpCircle, Lock, CheckCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,11 +41,27 @@ const CaseIntake = () => {
 
   const isFormValid = title.trim() && narrative.trim() && selectedCodes.length > 0 && consentNoConfidential && consentAggregateUse;
 
-  // Require auth
-  if (!authLoading && !user) {
-    navigate("/");
-    return null;
-  }
+  // Require auth; redirect admins to admin dashboard
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate("/");
+      return;
+    }
+    // Check if user is admin and redirect them
+    const checkAdmin = async () => {
+      const { data } = await supabase.rpc("has_role", {
+        _user_id: user.id,
+        _role: "admin" as const,
+      });
+      if (data === true) {
+        navigate("/admin", { replace: true });
+      }
+    };
+    checkAdmin();
+  }, [authLoading, user, navigate]);
+
+  if (!authLoading && !user) return null;
 
   // Usage limit check
   const usageExceeded = profile && profile.usage_count >= profile.max_analyses;

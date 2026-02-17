@@ -34,11 +34,10 @@ const Login = () => {
     // Check if user is admin and redirect accordingly
     const userId = signInData.user?.id;
     if (userId) {
-      const { data: roleData, error: roleError } = await supabase.rpc("has_role", {
+      const { data: roleData } = await supabase.rpc("has_role", {
         _user_id: userId,
         _role: "admin" as const,
       });
-      console.log("has_role result:", { roleData, roleError });
       if (roleData === true) {
         navigate("/admin", { replace: true });
         return;
