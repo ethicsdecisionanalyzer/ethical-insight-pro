@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { AlertCircle } from "lucide-react";
 import {
   Users,
   CheckCircle,
@@ -56,6 +57,12 @@ const Admin = () => {
   const { user, loading: authLoading, signOut, isAdmin } = useAuth();
   const [ready, setReady] = useState(false);
 
+  // Inline login state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
   // Data state
   const [questions, setQuestions] = useState<VerificationQuestion[]>([]);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
@@ -86,17 +93,39 @@ const Admin = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    if (authLoading || isAdmin === null) return;
+    if (authLoading) return;
     if (!user) {
-      navigate("/login");
+      // Show login form — no redirect
+      setReady(false);
       return;
     }
+    if (isAdmin === null) return; // Still loading role
     if (!isAdmin) {
-      navigate("/");
+      navigate("/case-intake", { replace: true });
       return;
     }
     setReady(true);
   }, [user, authLoading, isAdmin, navigate]);
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail.trim() || !loginPassword.trim()) return;
+    setLoginLoading(true);
+    setLoginError(null);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: loginEmail,
+      password: loginPassword,
+    });
+
+    if (error) {
+      setLoginError(error.message);
+      setLoginLoading(false);
+      return;
+    }
+    // AuthContext will pick up the session, set user + isAdmin, and the useEffect above will set ready=true
+    setLoginLoading(false);
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -198,10 +227,74 @@ const Admin = () => {
     await signOut();
   };
 
-  if (authLoading || !ready) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background-light">
         <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  // Show inline login form if not authenticated or not admin yet
+  if (!user || !ready) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background-light">
+        <header className="bg-card border-b border-border py-4">
+          <div className="container mx-auto px-4">
+            <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
+          </div>
+        </header>
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-md">
+            <div className="card-professional-elevated p-8">
+              <div className="text-center mb-6">
+                <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <LogOut className="w-7 h-7 text-primary" />
+                </div>
+                <h2 className="text-xl font-semibold text-foreground mb-2">Admin Sign In</h2>
+                <p className="text-muted-foreground text-sm">
+                  Sign in with your administrator credentials.
+                </p>
+              </div>
+              <form onSubmit={handleAdminLogin} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="admin@email.com"
+                    className="input-professional"
+                    required
+                    disabled={loginLoading}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Password</label>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Your password"
+                    className="input-professional"
+                    required
+                    disabled={loginLoading}
+                  />
+                </div>
+                {loginError && (
+                  <div className="alert-error flex items-start gap-2 animate-fade-in">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{loginError}</span>
+                  </div>
+                )}
+                <Button type="submit" disabled={loginLoading || !loginEmail.trim() || !loginPassword.trim()} className="w-full h-12 text-base font-medium">
+                  {loginLoading ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+            </div>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
