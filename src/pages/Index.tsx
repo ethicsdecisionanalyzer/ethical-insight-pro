@@ -7,11 +7,11 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
 
-  // If logged in, redirect to case intake
-  if (!authLoading && user) {
-    navigate("/case-intake");
+  // If logged in, redirect based on role
+  if (!authLoading && user && isAdmin !== null) {
+    navigate(isAdmin ? "/admin" : "/case-intake");
     return null;
   }
 

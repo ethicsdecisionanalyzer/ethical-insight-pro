@@ -53,8 +53,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signOut } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const { user, loading: authLoading, signOut, isAdmin } = useAuth();
+  const [ready, setReady] = useState(false);
 
   // Data state
   const [questions, setQuestions] = useState<VerificationQuestion[]>([]);
@@ -85,24 +85,18 @@ const Admin = () => {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
-  // Check admin role
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || isAdmin === null) return;
     if (!user) {
       navigate("/login");
       return;
     }
-
-    const checkAdmin = async () => {
-      const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-      if (!data) {
-        navigate("/");
-        return;
-      }
-      setIsAdmin(true);
-    };
-    checkAdmin();
-  }, [user, authLoading, navigate]);
+    if (!isAdmin) {
+      navigate("/");
+      return;
+    }
+    setReady(true);
+  }, [user, authLoading, isAdmin, navigate]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -125,8 +119,8 @@ const Admin = () => {
   }, []);
 
   useEffect(() => {
-    if (isAdmin) loadData();
-  }, [isAdmin, loadData]);
+    if (ready) loadData();
+  }, [ready, loadData]);
 
   // Question CRUD
   const openAddQuestion = () => {
@@ -204,7 +198,7 @@ const Admin = () => {
     await signOut();
   };
 
-  if (authLoading || isAdmin === null) {
+  if (authLoading || !ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background-light">
         <Spinner size="lg" />
