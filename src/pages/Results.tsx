@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { getCaseById, CaseSubmission } from "@/services/database";
 import type { EthicsAnalysis } from "@/services/aiAnalysis";
+import { useAuth } from "@/contexts/AuthContext";
 
 import { ResultsHeader } from "@/components/results/ResultsHeader";
 import { ConflictAlert } from "@/components/results/ConflictAlert";
@@ -22,6 +23,7 @@ const POLL_INTERVAL = 3000;
 
 const Results = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [searchParams] = useSearchParams();
   const caseId = searchParams.get("case_id");
   const sessionId = searchParams.get("session_id");
@@ -33,8 +35,13 @@ const Results = () => {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     if (!caseId || !sessionId) {
-      navigate("/");
+      navigate("/login");
       return;
     }
 
@@ -85,7 +92,7 @@ const Results = () => {
         pollRef.current = null;
       }
     };
-  }, [caseId, sessionId, navigate]);
+  }, [caseId, sessionId, navigate, user, authLoading]);
 
   // Loading state
   if (loading) {

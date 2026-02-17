@@ -45,7 +45,7 @@ const CaseIntake = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      navigate("/");
+      navigate("/login");
       return;
     }
     // Check if user is admin and redirect them
