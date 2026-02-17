@@ -27,7 +27,7 @@ const NARRATIVE_MAX_LENGTH = 5000;
 
 const CaseIntake = () => {
   const navigate = useNavigate();
-  const { user, profile, refreshProfile, loading: authLoading } = useAuth();
+  const { user, profile, refreshProfile, loading: authLoading, isAdmin } = useAuth();
 
   const [title, setTitle] = useState("");
   const [narrative, setNarrative] = useState("");
@@ -48,18 +48,10 @@ const CaseIntake = () => {
       navigate("/login");
       return;
     }
-    // Check if user is admin and redirect them
-    const checkAdmin = async () => {
-      const { data } = await supabase.rpc("has_role", {
-        _user_id: user.id,
-        _role: "admin" as const,
-      });
-      if (data === true) {
-        navigate("/admin", { replace: true });
-      }
-    };
-    checkAdmin();
-  }, [authLoading, user, navigate]);
+    if (isAdmin === true) {
+      navigate("/admin", { replace: true });
+    }
+  }, [authLoading, user, isAdmin, navigate]);
 
   if (!authLoading && !user) return null;
 

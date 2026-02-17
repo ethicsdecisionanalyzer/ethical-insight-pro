@@ -9,20 +9,17 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && user) {
-      // Already logged in — redirect based on role
-      supabase.rpc("has_role", { _user_id: user.id, _role: "admin" as const }).then(({ data }) => {
-        if (data === true) {
-          navigate("/admin", { replace: true });
-        } else {
-          navigate("/case-intake", { replace: true });
-        }
-      });
+    if (authLoading || !user || isAdmin === null) return;
+    // Already logged in — redirect based on role
+    if (isAdmin) {
+      navigate("/admin", { replace: true });
+    } else {
+      navigate("/case-intake", { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, isAdmin, authLoading, navigate]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,20 +43,10 @@ const Login = () => {
       return;
     }
 
-    // Check if user is admin and redirect accordingly
-    const userId = signInData.user?.id;
-    if (userId) {
-      const { data: roleData } = await supabase.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin" as const,
-      });
-      if (roleData === true) {
-        navigate("/admin", { replace: true });
-        return;
-      }
-    }
-
-    navigate("/case-intake", { replace: true });
+    // Role-based redirect is handled by the useEffect watching isAdmin from AuthContext
+    // After successful login, onAuthStateChange will fire, AuthContext sets user+isAdmin,
+    // then the useEffect above will redirect appropriately.
+    setLoading(false);
   };
 
   return (
