@@ -54,6 +54,7 @@ export function LensCard({ lensKey, lens }: LensCardProps) {
             style={{ width: `${lens.score * 10}%` }}
           />
         </div>
+        <p className="text-xs text-muted-foreground mt-1">1 = Very low ethical alignment · 10 = Very high ethical alignment</p>
       </div>
 
       <p className="text-sm text-foreground leading-relaxed mb-2">{lens.reasoning}</p>

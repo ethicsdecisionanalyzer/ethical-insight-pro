@@ -32,6 +32,8 @@ export interface CaseSubmissionData {
   selected_codes: string[];
   access_code_used: string;
   session_id: string;
+  consent_no_confidential: boolean;
+  consent_aggregate_use: boolean;
 }
 
 // Session helpers
@@ -90,6 +92,8 @@ export async function submitCase(data: CaseSubmissionData): Promise<CaseSubmissi
       selected_codes: data.selected_codes,
       access_code_used: data.access_code_used,
       session_id: data.session_id,
+      consent_no_confidential: data.consent_no_confidential,
+      consent_aggregate_use: data.consent_aggregate_use,
     })
     .select()
     .single();
