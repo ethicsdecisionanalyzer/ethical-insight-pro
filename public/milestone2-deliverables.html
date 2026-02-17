@@ -31,6 +31,11 @@
   .print-btn { background: #1a3a6b; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 15px; cursor: pointer; margin: 20px 0; }
   .print-btn:hover { background: #0f2a52; }
   .note { background: #fffbe6; border: 1px solid #f5e6a3; padding: 12px; border-radius: 6px; font-size: 13px; margin: 12px 0; }
+  .architecture-box { background: #f0f4fa; border: 1px solid #c5d3e8; border-radius: 8px; padding: 16px; margin: 12px 0; font-size: 14px; }
+  .architecture-box h4 { margin: 0 0 8px 0; color: #1a3a6b; font-size: 14px; }
+  .architecture-box ul { margin: 4px 0; padding-left: 20px; }
+  .verified { background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 10px 14px; margin: 8px 0; font-size: 13px; }
+  .verified strong { color: #16a34a; }
 </style>
 </head>
 <body>
@@ -40,50 +45,68 @@
 <h1>Milestone 2 Deliverables</h1>
 <p><strong>Project:</strong> Ethical Decision-Making Analyzer<br>
 <strong>Date:</strong> February 17, 2026<br>
-<strong>Version:</strong> Algorithm v1.2 — Professional Codes Integrated</p>
+<strong>Version:</strong> Algorithm v1.2 — Hybrid AI + Deterministic Guardrails</p>
 
+<!-- ===== SECTION 1: LINKS ===== -->
 <h2>1. Application Links</h2>
 <table>
-  <tr><th>Page</th><th>URL</th></tr>
-  <tr><td>Published App (Home)</td><td><a href="https://ethical-insight-pro.lovable.app">https://ethical-insight-pro.lovable.app</a></td></tr>
-  <tr><td>Login</td><td><a href="https://ethical-insight-pro.lovable.app/login">https://ethical-insight-pro.lovable.app/login</a></td></tr>
-  <tr><td>Book Verification</td><td><a href="https://ethical-insight-pro.lovable.app/verify">https://ethical-insight-pro.lovable.app/verify</a></td></tr>
-  <tr><td>Registration</td><td><a href="https://ethical-insight-pro.lovable.app/register">https://ethical-insight-pro.lovable.app/register</a></td></tr>
-  <tr><td>Case Submission</td><td><a href="https://ethical-insight-pro.lovable.app/case-intake">https://ethical-insight-pro.lovable.app/case-intake</a></td></tr>
-  <tr><td>Results (requires case)</td><td><a href="https://ethical-insight-pro.lovable.app/results">https://ethical-insight-pro.lovable.app/results</a></td></tr>
-  <tr><td>About / Information</td><td><a href="https://ethical-insight-pro.lovable.app/about">https://ethical-insight-pro.lovable.app/about</a></td></tr>
-  <tr><td>Admin Dashboard</td><td><a href="https://ethical-insight-pro.lovable.app/admin">https://ethical-insight-pro.lovable.app/admin</a></td></tr>
+  <tr><th>Page</th><th>Published URL</th><th>Preview URL</th></tr>
+  <tr><td>Home</td><td><a href="https://ethical-insight-pro.lovable.app">ethical-insight-pro.lovable.app</a></td><td><a href="https://id-preview--09040bb8-beda-413a-9b47-2c7b2631cec5.lovable.app">Preview</a></td></tr>
+  <tr><td>Login</td><td><a href="https://ethical-insight-pro.lovable.app/login">/login</a></td><td><a href="https://id-preview--09040bb8-beda-413a-9b47-2c7b2631cec5.lovable.app/login">Preview</a></td></tr>
+  <tr><td>Book Verification</td><td><a href="https://ethical-insight-pro.lovable.app/verify">/verify</a></td><td><a href="https://id-preview--09040bb8-beda-413a-9b47-2c7b2631cec5.lovable.app/verify">Preview</a></td></tr>
+  <tr><td>Registration</td><td><a href="https://ethical-insight-pro.lovable.app/register">/register</a></td><td><a href="https://id-preview--09040bb8-beda-413a-9b47-2c7b2631cec5.lovable.app/register">Preview</a></td></tr>
+  <tr><td>Case Submission</td><td><a href="https://ethical-insight-pro.lovable.app/case-intake">/case-intake</a></td><td><a href="https://id-preview--09040bb8-beda-413a-9b47-2c7b2631cec5.lovable.app/case-intake">Preview</a></td></tr>
+  <tr><td>Results (requires case)</td><td><a href="https://ethical-insight-pro.lovable.app/results">/results</a></td><td><a href="https://id-preview--09040bb8-beda-413a-9b47-2c7b2631cec5.lovable.app/results">Preview</a></td></tr>
+  <tr><td>About / Information</td><td><a href="https://ethical-insight-pro.lovable.app/about">/about</a></td><td><a href="https://id-preview--09040bb8-beda-413a-9b47-2c7b2631cec5.lovable.app/about">Preview</a></td></tr>
+  <tr><td>Admin Dashboard</td><td><a href="https://ethical-insight-pro.lovable.app/admin">/admin</a></td><td><a href="https://id-preview--09040bb8-beda-413a-9b47-2c7b2631cec5.lovable.app/admin">Preview</a></td></tr>
+  <tr><td>Forgot Password</td><td><a href="https://ethical-insight-pro.lovable.app/forgot-password">/forgot-password</a></td><td><a href="https://id-preview--09040bb8-beda-413a-9b47-2c7b2631cec5.lovable.app/forgot-password">Preview</a></td></tr>
 </table>
 
-<div class="note">⚠️ <strong>Note:</strong> The published URLs above require the app to be published first. For testing before publishing, use the preview URL: <a href="https://id-preview--09040bb8-beda-413a-9b47-2c7b2631cec5.lovable.app">Preview Link</a></div>
+<div class="note">⚠️ <strong>Note:</strong> Published URLs require the app to be published. Use the Preview URLs for pre-publish testing.</div>
 
-<h2>2. Credentials</h2>
+<!-- ===== SECTION 2: CREDENTIALS ===== -->
+<h2>2. Credentials &amp; Access</h2>
 
 <h3>Admin Account</h3>
 <div class="credential-box">
   <dl>
     <dt>Email</dt><dd>mark@admin.com</dd>
     <dt>Password</dt><dd>Set during registration (contact developer if unknown)</dd>
+    <dt>Role</dt><dd>admin (full dashboard access)</dd>
     <dt>Access URL</dt><dd><a href="https://ethical-insight-pro.lovable.app/admin">/admin</a></dd>
   </dl>
 </div>
 
-<h3>Book Verification Question (for new user registration)</h3>
+<h3>Book Verification Question (Required for New User Registration)</h3>
 <div class="credential-box">
   <dl>
     <dt>Question</dt><dd>Who is the owner of this project?</dd>
     <dt>Answer</dt><dd>mark</dd>
+    <dt>Case-sensitive?</dt><dd>No (case-insensitive match)</dd>
   </dl>
 </div>
 
+<h3>Registration Flow</h3>
+<div class="credential-box">
+  <dl>
+    <dt>Step 1</dt><dd>Go to <strong>/verify</strong> → answer the book question</dd>
+    <dt>Step 2</dt><dd>Redirected to <strong>/register</strong> → fill name, email, password (profession/tenure optional)</dd>
+    <dt>Step 3</dt><dd>Check email for verification link → click to confirm</dd>
+    <dt>Step 4</dt><dd>Go to <strong>/login</strong> → sign in with email &amp; password</dd>
+  </dl>
+</div>
+
+<!-- ===== SECTION 3: CHECKLIST ===== -->
 <h2>3. Milestone 2 Requirements Checklist</h2>
 
-<h3>Access & Registration Flow</h3>
+<h3>Access &amp; Registration Flow</h3>
 <table>
   <tr><th>Requirement</th><th>Status</th></tr>
   <tr><td>Book verification via knowledge-based question</td><td class="status-done">✅ Done</td></tr>
   <tr><td>User registration (name + email required; profession/tenure optional)</td><td class="status-done">✅ Done</td></tr>
+  <tr><td>Email verification required before login</td><td class="status-done">✅ Done</td></tr>
   <tr><td>No printed or per-book access codes</td><td class="status-done">✅ Done</td></tr>
+  <tr><td>Forgot password flow</td><td class="status-done">✅ Done</td></tr>
 </table>
 
 <h3>Usage Limits</h3>
@@ -96,27 +119,29 @@
   <tr><td>No monetization UI (data model supports future monetization)</td><td class="status-done">✅ Done</td></tr>
 </table>
 
-<h3>Scoring & Algorithm (v1.2)</h3>
+<h3>Scoring &amp; Algorithm (v1.2 — Hybrid with Guardrails)</h3>
 <table>
   <tr><th>Requirement</th><th>Status</th></tr>
   <tr><td>1–10 scoring scale per lens (no sub-ranges or bins)</td><td class="status-done">✅ Done</td></tr>
   <tr><td>UI label: "1 = Very low ethical alignment · 10 = Very high ethical alignment"</td><td class="status-done">✅ Done</td></tr>
   <tr><td>Six ethical lenses with equal weighting</td><td class="status-done">✅ Done</td></tr>
   <tr><td>Professional codes constrain Duty, Rights, Justice lenses</td><td class="status-done">✅ Done</td></tr>
-  <tr><td>Duty/Rights capped at 4 on code violation</td><td class="status-done">✅ Done</td></tr>
-  <tr><td>"Ethically unstable" flag on code violations</td><td class="status-done">✅ Done</td></tr>
-  <tr><td>Conflict levels (1–3) based on lens divergence</td><td class="status-done">✅ Done</td></tr>
-  <tr><td>Multi-code disagreement → Level 3</td><td class="status-done">✅ Done</td></tr>
+  <tr><td>Duty/Rights capped at 4 on code violation (deterministic guardrail)</td><td class="status-done">✅ Done</td></tr>
+  <tr><td>"Ethically unstable" flag on code violations (deterministic)</td><td class="status-done">✅ Done</td></tr>
+  <tr><td>Conflict levels (1–3) based on lens divergence (deterministic)</td><td class="status-done">✅ Done</td></tr>
+  <tr><td>Multi-code disagreement → Level 3 minimum (deterministic)</td><td class="status-done">✅ Done</td></tr>
+  <tr><td>compositeScore = average of 6 lens scores (deterministic)</td><td class="status-done">✅ Done</td></tr>
   <tr><td>No full code texts stored/reproduced</td><td class="status-done">✅ Done</td></tr>
+  <tr><td>Post-processing guardrails flag: <code>_guardrailsApplied: true</code></td><td class="status-done">✅ Done</td></tr>
 </table>
 
-<h3>Confidentiality & Data Safeguards</h3>
+<h3>Confidentiality &amp; Data Safeguards</h3>
 <table>
   <tr><th>Requirement</th><th>Status</th></tr>
   <tr><td>Pre-submission anonymization notice on case intake page</td><td class="status-done">✅ Done</td></tr>
   <tr><td>Two required consent checkboxes (no confidential info + aggregate use)</td><td class="status-done">✅ Done</td></tr>
   <tr><td>Consent fields stored in database for compliance tracking</td><td class="status-done">✅ Done</td></tr>
-  <tr><td>About/Information page with data use & confidentiality statement</td><td class="status-done">✅ Done</td></tr>
+  <tr><td>About/Information page with data use &amp; confidentiality statement</td><td class="status-done">✅ Done</td></tr>
   <tr><td>Results page disclaimer</td><td class="status-done">✅ Done</td></tr>
 </table>
 
@@ -124,7 +149,7 @@
 <table>
   <tr><th>Requirement</th><th>Status</th></tr>
   <tr><td>Wiley copyright notice in About/Information section only</td><td class="status-done">✅ Done</td></tr>
-  <tr><td>Exact text: "From <em>Ethical Decision-making in Occupational and Environmental Health and Safety: A Comparative Case Study Approach</em>, Copyright © 2026 by John Wiley & Sons, Inc. Used by arrangement with John Wiley & Sons, Inc."</td><td class="status-done">✅ Done</td></tr>
+  <tr><td>Exact text: "From <em>Ethical Decision-making in Occupational and Environmental Health and Safety</em>, Copyright © 2026 by John Wiley &amp; Sons, Inc."</td><td class="status-done">✅ Done</td></tr>
   <tr><td>Not displayed on main analysis screen</td><td class="status-done">✅ Done</td></tr>
   <tr><td>No Wiley logo required</td><td class="status-done">✅ Done</td></tr>
 </table>
@@ -135,58 +160,115 @@
   <tr><td>No long-term client-side caching of excerpts/outputs</td><td class="status-done">✅ Done</td></tr>
   <tr><td>Content served dynamically, stored only as needed</td><td class="status-done">✅ Done</td></tr>
   <tr><td>Authenticated, permission-based access only</td><td class="status-done">✅ Done</td></tr>
+  <tr><td>Row-Level Security (RLS) on all database tables</td><td class="status-done">✅ Done</td></tr>
   <tr><td>No bulk extraction beyond intended PDF export</td><td class="status-done">✅ Done</td></tr>
-  <tr><td>Excerpts limited and proportional to educational use</td><td class="status-done">✅ Done</td></tr>
 </table>
 
-<h2>4. Test Instructions</h2>
+<!-- ===== SECTION 4: ALGORITHM ARCHITECTURE ===== -->
+<h2>4. Algorithm v1.2 Architecture — Hybrid AI + Guardrails</h2>
+
+<div class="architecture-box">
+  <h4>How It Works</h4>
+  <p>The analysis uses a two-stage pipeline:</p>
+  <ol>
+    <li><strong>Stage 1 — AI Generation (Gemini 2.0 Flash):</strong> Generates rich reasoning, narratives, initial scores, conflict analysis, recommendations, and reflection questions for all six ethical lenses.</li>
+    <li><strong>Stage 2 — Deterministic Guardrails:</strong> Post-processes the AI output to enforce Mark's spec rules with mathematical precision. The AI cannot override these rules.</li>
+  </ol>
+</div>
+
+<div class="architecture-box">
+  <h4>Guardrail Rules Enforced (Deterministic — Cannot Be Bypassed)</h4>
+  <ul>
+    <li><strong>Score clamping:</strong> All lens scores forced to integer range 1–10</li>
+    <li><strong>Code violation caps:</strong> If <code>codeConstraint: true</code> on Duty or Rights, scores capped at max 4</li>
+    <li><strong>Composite score:</strong> Recalculated as exact average of 6 lens scores (1 decimal)</li>
+    <li><strong>Conflict level:</strong> Calculated from actual score divergence:
+      <ul>
+        <li>Level 1: All scores within 2 points</li>
+        <li>Level 2: Any scores 3–5 points apart</li>
+        <li>Level 3: Any scores &gt;5 points apart OR code violation</li>
+      </ul>
+    </li>
+    <li><strong>Multi-code minimums:</strong> 1 code → conflict ≥2; 2+ codes → conflict ≥3</li>
+    <li><strong>Ethical stability:</strong> Deterministic:
+      <ul>
+        <li>"robust" = conflict 1, no violations, composite ≥7</li>
+        <li>"stable" = conflict ≤2, no violations</li>
+        <li>"unstable" = conflict 3 OR any code violation</li>
+      </ul>
+    </li>
+    <li><strong>Audit flag:</strong> <code>_guardrailsApplied: true</code> on every response</li>
+  </ul>
+</div>
+
+<div class="verified">
+  <strong>✅ Verified:</strong> Guardrails tested with a "Falsified Air Quality Report" case (clear AIHA/ABIH + BCSP/ASSP violation). Result: Duty=2 (capped), Rights=2 (capped), conflictLevel=3, ethicalStability="unstable", compositeScore=1.8, _guardrailsApplied=true. All rules enforced correctly.
+</div>
+
+<!-- ===== SECTION 5: TEST INSTRUCTIONS ===== -->
+<h2>5. Test Instructions</h2>
 
 <h3>Test A: New User Registration Flow</h3>
 <div class="test-step">
   <strong>Step 1:</strong> Go to <a href="https://ethical-insight-pro.lovable.app/verify">/verify</a><br>
   <strong>Step 2:</strong> Answer the question: <em>"Who is the owner of this project?"</em> → Type <strong>mark</strong><br>
   <strong>Step 3:</strong> Complete registration with name, email, and password<br>
-  <strong>Step 4:</strong> Log in with the new account<br>
+  <strong>Step 4:</strong> Check email for verification link and click it<br>
+  <strong>Step 5:</strong> Log in at <a href="https://ethical-insight-pro.lovable.app/login">/login</a><br>
   <strong>Expected:</strong> Redirected to case intake page. Usage counter shows 0 / 5.
 </div>
 
-<h3>Test B: Case Submission & Analysis</h3>
+<h3>Test B: Case Submission &amp; Analysis</h3>
 <div class="test-step">
-  <strong>Step 1:</strong> On the case intake page, fill in a title and narrative<br>
+  <strong>Step 1:</strong> On <a href="https://ethical-insight-pro.lovable.app/case-intake">/case-intake</a>, fill in a title and narrative<br>
   <strong>Step 2:</strong> Select at least one professional code (e.g., BCSP/ASSP)<br>
   <strong>Step 3:</strong> Check both consent boxes<br>
   <strong>Step 4:</strong> Click "Submit Case for Analysis"<br>
-  <strong>Step 5:</strong> Wait for analysis (button shows "Analyzing...")<br>
-  <strong>Expected:</strong> Automatically redirected to results page with scores (1–10), radar chart, conflict analysis, recommendations, and disclaimer. Usage counter increments by 1.
+  <strong>Step 5:</strong> Wait for analysis (shows "Analyzing...")<br>
+  <strong>Expected:</strong> Results page with scores (1–10), radar chart, conflict analysis, recommendations, and disclaimer. Usage counter increments by 1.
 </div>
 
-<h3>Test C: Usage Limit Enforcement</h3>
+<h3>Test C: Code Violation Guardrail Test</h3>
+<div class="test-step">
+  <strong>Step 1:</strong> Submit a case with a clear professional code violation, e.g.:<br>
+  <em>Title:</em> "Falsified Safety Report"<br>
+  <em>Narrative:</em> "A safety professional was pressured to alter exposure monitoring results showing dangerous silica levels. They submitted a falsified report showing compliant levels, endangering 200+ workers."<br>
+  <em>Codes:</em> Select AIHA/ABIH and BCSP/ASSP<br>
+  <strong>Expected:</strong><br>
+  • Duty and Rights scores ≤ 4 (capped by guardrails)<br>
+  • <code>codeConstraint: true</code> shown on Duty and Rights cards<br>
+  • Ethical Stability = "Unstable"<br>
+  • Conflict Level = 3<br>
+  • Warning flags mention code violation
+</div>
+
+<h3>Test D: Usage Limit Enforcement</h3>
 <div class="test-step">
   <strong>Step 1:</strong> Submit cases until usage count equals max (5)<br>
   <strong>Expected:</strong> Warning banner appears. Submit button is disabled. User cannot submit more cases.
 </div>
 
-<h3>Test D: Admin Dashboard</h3>
+<h3>Test E: Admin Dashboard</h3>
 <div class="test-step">
   <strong>Step 1:</strong> Go to <a href="https://ethical-insight-pro.lovable.app/admin">/admin</a><br>
-  <strong>Step 2:</strong> Log in with admin credentials (mark@admin.com)<br>
+  <strong>Step 2:</strong> Log in with <strong>mark@admin.com</strong><br>
   <strong>Expected:</strong> Dashboard shows stats, user list, recent submissions, and verification question management.<br>
   <strong>Step 3:</strong> Test resetting a user's usage count<br>
   <strong>Step 4:</strong> Test adding/editing/deleting verification questions
 </div>
 
-<h3>Test E: About / Information Page</h3>
+<h3>Test F: About / Information Page</h3>
 <div class="test-step">
   <strong>Step 1:</strong> Go to <a href="https://ethical-insight-pro.lovable.app/about">/about</a><br>
-  <strong>Expected:</strong> Shows Wiley attribution, data use & confidentiality statement, and disclaimer. No Wiley logo.
+  <strong>Expected:</strong> Shows Wiley attribution, data use &amp; confidentiality statement, and disclaimer. No Wiley logo.
 </div>
 
-<h3>Test F: Results Page Verification</h3>
+<h3>Test G: Results Page Verification</h3>
 <div class="test-step">
   <strong>Step 1:</strong> After completing Test B, review the results page<br>
   <strong>Expected:</strong><br>
   • Composite score displayed (1–10 scale)<br>
-  • Six lens cards with scores, reasoning, and scale label<br>
+  • Six lens cards with scores, reasoning, and scale label "1 = Very low · 10 = Very high"<br>
   • Radar chart visualization<br>
   • Conflict alert (if applicable)<br>
   • Warning flags (if applicable)<br>
@@ -196,19 +278,35 @@
   • Disclaimer text at bottom
 </div>
 
-<h2>5. Technical Architecture Summary</h2>
+<!-- ===== SECTION 6: TECH ARCHITECTURE ===== -->
+<h2>6. Technical Architecture Summary</h2>
 <table>
   <tr><th>Component</th><th>Technology</th></tr>
   <tr><td>Frontend</td><td>React 18, Vite, Tailwind CSS, TypeScript</td></tr>
-  <tr><td>Backend</td><td>Lovable Cloud (Supabase)</td></tr>
-  <tr><td>AI Analysis</td><td>Google Gemini 2.0 Flash via Edge Function</td></tr>
+  <tr><td>Backend</td><td>Lovable Cloud (PostgreSQL + Edge Functions)</td></tr>
+  <tr><td>AI Analysis</td><td>Google Gemini 2.0 Flash (reasoning + scores)</td></tr>
+  <tr><td>Post-Processing</td><td>Deterministic guardrails (score clamping, conflict calc, stability)</td></tr>
   <tr><td>Authentication</td><td>Email/password with book verification gate</td></tr>
-  <tr><td>Database</td><td>PostgreSQL with Row-Level Security</td></tr>
+  <tr><td>Database Security</td><td>Row-Level Security (RLS) on all tables</td></tr>
   <tr><td>Admin Access</td><td>Role-based (RBAC) with inline login on /admin</td></tr>
+  <tr><td>Charts</td><td>Recharts (radar chart for lens visualization)</td></tr>
+</table>
+
+<!-- ===== SECTION 7: DATABASE SCHEMA ===== -->
+<h2>7. Database Tables</h2>
+<table>
+  <tr><th>Table</th><th>Purpose</th></tr>
+  <tr><td><code>profiles</code></td><td>User metadata, usage tracking (usage_count, max_analyses), book_verified status</td></tr>
+  <tr><td><code>case_submissions</code></td><td>Submitted cases with narrative, selected codes, consent flags, analysis_result (JSON)</td></tr>
+  <tr><td><code>verification_questions</code></td><td>Admin-managed book verification Q&amp;A</td></tr>
+  <tr><td><code>user_roles</code></td><td>RBAC roles (admin, user)</td></tr>
+  <tr><td><code>access_codes</code></td><td>Legacy access codes (retained for data model flexibility)</td></tr>
+  <tr><td><code>code_redemptions</code></td><td>Legacy code redemption tracking</td></tr>
 </table>
 
 <p style="text-align: center; margin-top: 40px; color: #999; font-size: 12px;">
-  — End of Milestone 2 Deliverables Document —
+  — End of Milestone 2 Deliverables Document —<br>
+  Last updated: February 17, 2026
 </p>
 
 </body>
