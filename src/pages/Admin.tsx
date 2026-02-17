@@ -202,7 +202,6 @@ const Admin = () => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/");
   };
 
   if (authLoading || isAdmin === null) {
