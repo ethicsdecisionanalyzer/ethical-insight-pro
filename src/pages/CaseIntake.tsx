@@ -334,7 +334,7 @@ const CaseIntake = () => {
                       ) : submissionState === "analyzing" ? (
                         <>
                           <Spinner size="sm" className="mr-2" />
-                          Analyzing with AI...
+                          Analyzing...
                         </>
                       ) : (
                         "Submit Case for Analysis"
