@@ -38,14 +38,14 @@ const Login = () => {
         _user_id: userId,
         _role: "admin" as const,
       });
-      
+      console.log("has_role result:", { roleData, roleError });
       if (roleData === true) {
-        navigate("/admin");
+        navigate("/admin", { replace: true });
         return;
       }
     }
 
-    navigate("/case-intake");
+    navigate("/case-intake", { replace: true });
   };
 
   return (
