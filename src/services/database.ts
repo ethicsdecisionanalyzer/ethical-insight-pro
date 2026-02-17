@@ -1,16 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // Types matching our database schema
-export interface AccessCode {
-  id: string;
-  code: string;
-  max_uses: number;
-  uses_count: number;
-  active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface CaseSubmission {
   id: string;
   title: string;
@@ -30,55 +20,15 @@ export interface CaseSubmissionData {
   narrative: string;
   stakeholders?: string;
   selected_codes: string[];
-  access_code_used: string;
   session_id: string;
   consent_no_confidential: boolean;
   consent_aggregate_use: boolean;
+  user_id?: string;
 }
 
 // Session helpers
 export function generateSessionId(): string {
   return `sess-${Math.random().toString(36).substring(2, 11)}`;
-}
-
-// Access code validation
-export async function validateAccessCode(code: string): Promise<AccessCode | null> {
-  const { data, error } = await supabase
-    .from("access_codes")
-    .select("*")
-    .ilike("code", code)
-    .eq("active", true)
-    .single();
-
-  if (error || !data) return null;
-  if (data.uses_count >= data.max_uses) return null;
-
-  return data as AccessCode;
-}
-
-// Increment usage + create redemption
-export async function incrementCodeUsage(codeId: string, sessionId: string): Promise<void> {
-  const { data: current } = await supabase
-    .from("access_codes")
-    .select("uses_count, max_uses")
-    .eq("id", codeId)
-    .single();
-
-  if (!current) throw new Error("Code not found");
-
-  const newCount = current.uses_count + 1;
-
-  await supabase
-    .from("access_codes")
-    .update({
-      uses_count: newCount,
-      active: newCount < current.max_uses,
-    })
-    .eq("id", codeId);
-
-  await supabase
-    .from("code_redemptions")
-    .insert({ code_id: codeId, session_id: sessionId });
 }
 
 // Submit case
@@ -90,10 +40,11 @@ export async function submitCase(data: CaseSubmissionData): Promise<CaseSubmissi
       narrative: data.narrative,
       stakeholders: data.stakeholders || null,
       selected_codes: data.selected_codes,
-      access_code_used: data.access_code_used,
+      access_code_used: "registered-user",
       session_id: data.session_id,
       consent_no_confidential: data.consent_no_confidential,
       consent_aggregate_use: data.consent_aggregate_use,
+      user_id: data.user_id || null,
     })
     .select()
     .single();
@@ -116,69 +67,25 @@ export async function getCaseById(id: string, sessionId: string): Promise<CaseSu
 }
 
 // Admin functions
-export async function createAccessCode(code: string, maxUses: number): Promise<AccessCode> {
-  const { data, error } = await supabase
-    .from("access_codes")
-    .insert({ code, max_uses: maxUses })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as AccessCode;
-}
-
-export async function searchAccessCodes(query?: string): Promise<AccessCode[]> {
-  let q = supabase.from("access_codes").select("*").order("created_at", { ascending: false });
-
-  if (query) {
-    q = q.ilike("code", `%${query}%`);
-  }
-
-  const { data, error } = await q;
-  if (error) throw error;
-  return (data || []) as AccessCode[];
-}
-
-export async function resetAccessCode(codeId: string): Promise<void> {
-  const { error } = await supabase
-    .from("access_codes")
-    .update({ uses_count: 0, active: true })
-    .eq("id", codeId);
-
-  if (error) throw error;
-}
-
-export async function deactivateAccessCode(codeId: string): Promise<void> {
-  const { error } = await supabase
-    .from("access_codes")
-    .update({ active: false })
-    .eq("id", codeId);
-
-  if (error) throw error;
-}
-
 export async function getAdminStats(): Promise<{
-  totalCodes: number;
-  activeCodes: number;
+  totalUsers: number;
+  verifiedUsers: number;
   totalSubmissions: number;
-  todayRedemptions: number;
+  activeQuestions: number;
 }> {
-  const [codesRes, submissionsRes, redemptionsRes] = await Promise.all([
-    supabase.from("access_codes").select("*"),
+  const [profilesRes, submissionsRes, questionsRes] = await Promise.all([
+    supabase.from("profiles").select("*"),
     supabase.from("case_submissions").select("id", { count: "exact", head: true }),
-    supabase
-      .from("code_redemptions")
-      .select("id", { count: "exact", head: true })
-      .gte("created_at", new Date().toISOString().split("T")[0]),
+    supabase.from("verification_questions").select("id", { count: "exact", head: true }).eq("active", true),
   ]);
 
-  const codes = (codesRes.data || []) as AccessCode[];
+  const profiles = profilesRes.data || [];
 
   return {
-    totalCodes: codes.length,
-    activeCodes: codes.filter((c) => c.active).length,
+    totalUsers: profiles.length,
+    verifiedUsers: profiles.filter((p) => p.book_verified).length,
     totalSubmissions: submissionsRes.count || 0,
-    todayRedemptions: redemptionsRes.count || 0,
+    activeQuestions: questionsRes.count || 0,
   };
 }
 
@@ -191,6 +98,84 @@ export async function getRecentSubmissions(): Promise<CaseSubmission[]> {
 
   if (error) throw error;
   return (data || []) as CaseSubmission[];
+}
+
+// Verification question management
+export interface VerificationQuestion {
+  id: string;
+  question: string;
+  answer: string;
+  active: boolean;
+  created_at: string;
+}
+
+export async function getVerificationQuestions(): Promise<VerificationQuestion[]> {
+  const { data, error } = await supabase
+    .from("verification_questions")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as VerificationQuestion[];
+}
+
+export async function createVerificationQuestion(question: string, answer: string): Promise<void> {
+  const { error } = await supabase
+    .from("verification_questions")
+    .insert({ question, answer, active: true });
+
+  if (error) throw error;
+}
+
+export async function updateVerificationQuestion(id: string, updates: { question?: string; answer?: string; active?: boolean }): Promise<void> {
+  const { error } = await supabase
+    .from("verification_questions")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function deleteVerificationQuestion(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("verification_questions")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+// User management
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  profession: string | null;
+  tenure: string | null;
+  usage_count: number;
+  max_analyses: number;
+  book_verified: boolean;
+  created_at: string;
+}
+
+export async function getAllProfiles(): Promise<UserProfile[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as UserProfile[];
+}
+
+export async function updateUserProfile(userId: string, updates: { usage_count?: number; max_analyses?: number }): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update(updates)
+    .eq("user_id", userId);
+
+  if (error) throw error;
 }
 
 // Professional codes options (static)
