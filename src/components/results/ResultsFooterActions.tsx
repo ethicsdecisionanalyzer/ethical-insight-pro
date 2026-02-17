@@ -18,8 +18,7 @@ export function ResultsFooterActions() {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground text-center max-w-lg mx-auto">
-        This analysis is a tool for professional reflection, not a substitute for ethical judgment.
-        Always exercise your professional expertise when making decisions.
+        This tool provides a structured analytical framework and does not constitute legal, medical, or professional advice. Independent professional judgment remains essential.
       </p>
     </div>
   );

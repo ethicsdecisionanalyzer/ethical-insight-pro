@@ -38,8 +38,10 @@ const CaseIntake = () => {
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showExampleModal, setShowExampleModal] = useState(false);
+  const [consentNoConfidential, setConsentNoConfidential] = useState(false);
+  const [consentAggregateUse, setConsentAggregateUse] = useState(false);
 
-  const isFormValid = title.trim() && narrative.trim() && selectedCodes.length > 0;
+  const isFormValid = title.trim() && narrative.trim() && selectedCodes.length > 0 && consentNoConfidential && consentAggregateUse;
 
   if (!codeId || !sessionId) {
     navigate("/");
@@ -67,6 +69,8 @@ const CaseIntake = () => {
         selected_codes: selectedCodes,
         access_code_used: accessCode,
         session_id: sessionId,
+        consent_no_confidential: consentNoConfidential,
+        consent_aggregate_use: consentAggregateUse,
       });
 
       setSubmissionState("analyzing");
@@ -142,6 +146,9 @@ const CaseIntake = () => {
                   <p className="text-muted-foreground">
                     Describe the ethical dilemma you're facing. Be as detailed as possible for accurate analysis.
                   </p>
+                  <div className="mt-3 p-3 rounded-lg border border-warning/30 bg-warning/5 text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">⚠️ Important:</span> Please do not include company names, identifiable individuals, or confidential business information. Describe scenarios in generalized terms.
+                  </div>
                 </div>
 
                 <div className="card-professional-elevated p-6 space-y-6">
@@ -236,6 +243,33 @@ const CaseIntake = () => {
                     <p className="text-xs text-muted-foreground mt-2">
                       Select the professional code(s) that apply to your role
                     </p>
+                  </div>
+
+                  {/* Consent Checkboxes */}
+                  <div className="space-y-3 pt-4 border-t border-border">
+                    <p className="text-sm font-medium text-foreground">Required Consent</p>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <Checkbox
+                        checked={consentNoConfidential}
+                        onCheckedChange={(checked) => setConsentNoConfidential(checked === true)}
+                        disabled={submissionState !== "idle"}
+                        className="mt-0.5"
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        I understand submissions must not contain confidential or identifiable information.
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <Checkbox
+                        checked={consentAggregateUse}
+                        onCheckedChange={(checked) => setConsentAggregateUse(checked === true)}
+                        disabled={submissionState !== "idle"}
+                        className="mt-0.5"
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        I consent to anonymized, aggregate use of submitted data for research and publication purposes.
+                      </span>
+                    </label>
                   </div>
 
                   {/* Action Buttons */}

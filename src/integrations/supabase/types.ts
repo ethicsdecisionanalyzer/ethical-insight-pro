@@ -48,6 +48,8 @@ export type Database = {
         Row: {
           access_code_used: string
           analysis_result: Json | null
+          consent_aggregate_use: boolean
+          consent_no_confidential: boolean
           created_at: string
           id: string
           narrative: string
@@ -61,6 +63,8 @@ export type Database = {
         Insert: {
           access_code_used: string
           analysis_result?: Json | null
+          consent_aggregate_use?: boolean
+          consent_no_confidential?: boolean
           created_at?: string
           id?: string
           narrative: string
@@ -74,6 +78,8 @@ export type Database = {
         Update: {
           access_code_used?: string
           analysis_result?: Json | null
+          consent_aggregate_use?: boolean
+          consent_no_confidential?: boolean
           created_at?: string
           id?: string
           narrative?: string
