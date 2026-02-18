@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Slider } from "@/components/ui/slider";
 import { FileText, HelpCircle, Lock, CheckCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -38,6 +39,14 @@ const CaseIntake = () => {
   const [showExampleModal, setShowExampleModal] = useState(false);
   const [consentNoConfidential, setConsentNoConfidential] = useState(false);
   const [consentAggregateUse, setConsentAggregateUse] = useState(false);
+  const [lensScores, setLensScores] = useState<Record<string, number>>({
+    utilitarian: 5,
+    duty: 5,
+    justice: 5,
+    virtue: 5,
+    care: 5,
+    commonGood: 5,
+  });
 
   const isFormValid = title.trim() && narrative.trim() && selectedCodes.length > 0 && consentNoConfidential && consentAggregateUse;
 
@@ -105,6 +114,7 @@ const CaseIntake = () => {
           narrative,
           stakeholders: stakeholders || "",
           selectedCodes,
+          lensScores,
         });
 
         await supabase
@@ -282,6 +292,49 @@ const CaseIntake = () => {
                     <p className="text-xs text-muted-foreground mt-2">
                       Select the professional code(s) that apply to your role
                     </p>
+                  </div>
+
+                  {/* Ethical Lens Scoring */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Ethical Lens Scoring <span className="text-destructive">*</span>
+                    </label>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Rate how well the situation aligns with each ethical lens (1 = very low alignment, 10 = very high alignment).
+                    </p>
+                    <div className="space-y-5">
+                      {([
+                        { key: "utilitarian", label: "Utilitarian (Consequences)", desc: "Greatest good for the greatest number" },
+                        { key: "duty", label: "Deontological (Duties)", desc: "Professional obligations, rules, codes of conduct" },
+                        { key: "justice", label: "Justice / Fairness", desc: "Equitable treatment across all stakeholders" },
+                        { key: "virtue", label: "Virtue Ethics", desc: "Character and professional integrity" },
+                        { key: "care", label: "Care Ethics", desc: "Relationships and vulnerable populations" },
+                        { key: "commonGood", label: "Common Good", desc: "Shared conditions and community welfare" },
+                      ] as const).map(({ key, label, desc }) => (
+                        <div key={key} className="space-y-1.5">
+                          <div className="flex justify-between items-baseline">
+                            <div>
+                              <span className="text-sm font-medium text-foreground">{label}</span>
+                              <span className="text-xs text-muted-foreground ml-2">{desc}</span>
+                            </div>
+                            <span className="text-sm font-bold text-primary tabular-nums w-8 text-right">{lensScores[key]}</span>
+                          </div>
+                          <Slider
+                            value={[lensScores[key]]}
+                            onValueChange={([v]) => setLensScores((prev) => ({ ...prev, [key]: v }))}
+                            min={1}
+                            max={10}
+                            step={1}
+                            disabled={submissionState !== "idle" || !!usageExceeded}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>1 — Low</span>
+                            <span>10 — High</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Consent Checkboxes */}
