@@ -5,9 +5,9 @@ import type { CaseSubmission } from "@/services/database";
 import { professionalCodes } from "@/services/database";
 
 const stabilityConfig: Record<string, { label: string; className: string }> = {
-  robust: { label: "Robust", className: "bg-success/10 text-success border-success/30" },
-  stable: { label: "Stable", className: "bg-warning/10 text-warning border-warning/30" },
-  unstable: { label: "Unstable", className: "bg-destructive/10 text-destructive border-destructive/30" },
+  "Stable": { label: "Stable", className: "bg-success/10 text-success border-success/30" },
+  "Contested": { label: "Contested", className: "bg-warning/10 text-warning border-warning/30" },
+  "Ethically Unstable": { label: "Ethically Unstable", className: "bg-destructive/10 text-destructive border-destructive/30" },
 };
 
 function scoreColor(score: number): string {
@@ -22,7 +22,7 @@ interface ResultsHeaderProps {
 }
 
 export function ResultsHeader({ caseData, analysis }: ResultsHeaderProps) {
-  const stability = stabilityConfig[analysis.ethicalStability] || stabilityConfig.stable;
+  const stability = stabilityConfig[analysis.ethicalStability] || stabilityConfig["Stable"];
   const codeLabels = professionalCodes.reduce<Record<string, string>>((acc, c) => {
     acc[c.id] = c.label;
     return acc;
@@ -37,10 +37,6 @@ export function ResultsHeader({ caseData, analysis }: ResultsHeaderProps) {
             {analysis.compositeScore}
           </div>
           <p className="text-xs text-muted-foreground mt-2">Composite Score / 10</p>
-          <div className="mt-3 space-y-1 text-xs text-muted-foreground">
-            <p>Code Compliance: <span className="font-semibold text-foreground">{analysis.codeComplianceScore ?? "—"}/10</span> <span className="opacity-70">(70%)</span></p>
-            <p>Lens Average: <span className="font-semibold text-foreground">{analysis.lensAverage ?? "—"}/10</span> <span className="opacity-70">(30%)</span></p>
-          </div>
         </div>
 
         {/* Case info */}

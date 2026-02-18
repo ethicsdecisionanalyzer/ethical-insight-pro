@@ -1,14 +1,13 @@
-import { Shield, Users, Scale, Eye, Heart, AlertTriangle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Shield, Users, Scale, Eye, Heart, Globe } from "lucide-react";
 import type { LensScore } from "@/services/aiAnalysis";
 
 const LENS_META: Record<string, { label: string; icon: React.ReactNode; description: string }> = {
-  duty: { label: "Duty / Deontological", icon: <Shield className="w-5 h-5" />, description: "Professional obligations and codes" },
+  duty: { label: "Deontological / Duty", icon: <Shield className="w-5 h-5" />, description: "Professional obligations and codes" },
   utilitarian: { label: "Utilitarian", icon: <Users className="w-5 h-5" />, description: "Greatest good for greatest number" },
-  rights: { label: "Rights-Based", icon: <Scale className="w-5 h-5" />, description: "Individual rights protection" },
   justice: { label: "Justice / Fairness", icon: <Scale className="w-5 h-5" />, description: "Equitable treatment" },
   virtue: { label: "Virtue Ethics", icon: <Eye className="w-5 h-5" />, description: "Character and integrity" },
   care: { label: "Care Ethics", icon: <Heart className="w-5 h-5" />, description: "Relationships and vulnerable populations" },
+  commonGood: { label: "Common Good", icon: <Globe className="w-5 h-5" />, description: "Shared conditions and community welfare" },
 };
 
 function barColor(score: number): string {
@@ -34,12 +33,6 @@ export function LensCard({ lensKey, lens }: LensCardProps) {
           <h3 className="font-semibold text-foreground text-sm">{meta.label}</h3>
           <p className="text-xs text-muted-foreground">{meta.description}</p>
         </div>
-        {lens.codeConstraint && (
-          <Badge variant="destructive" className="text-xs shrink-0">
-            <AlertTriangle className="w-3 h-3 mr-1" />
-            Capped
-          </Badge>
-        )}
       </div>
 
       {/* Score bar */}
@@ -57,19 +50,7 @@ export function LensCard({ lensKey, lens }: LensCardProps) {
         <p className="text-xs text-muted-foreground mt-1">1 = Very low ethical alignment · 10 = Very high ethical alignment</p>
       </div>
 
-      <p className="text-sm text-foreground leading-relaxed mb-2">{lens.reasoning}</p>
-
-      {lens.codeInfluence && (
-        <p className="text-xs text-primary bg-primary/5 rounded p-2 mt-2">
-          <strong>Code Influence:</strong> {lens.codeInfluence}
-        </p>
-      )}
-
-      {lens.codeConstraint && (
-        <p className="text-xs text-destructive bg-destructive/5 rounded p-2 mt-1">
-          ⚠️ Score constrained — professional code violation detected
-        </p>
-      )}
+      <p className="text-sm text-foreground leading-relaxed">{lens.reasoning}</p>
     </div>
   );
 }
