@@ -18,6 +18,9 @@ export interface EthicsAnalysis {
     care: LensScore;
   };
   compositeScore: number;
+  lensAverage: number;
+  codeComplianceScore: number;
+  weightingFormula: string;
   ethicalStability: "unstable" | "stable" | "robust";
   conflictLevel: 1 | 2 | 3;
   conflictAnalysis: {
