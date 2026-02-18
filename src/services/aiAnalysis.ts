@@ -4,32 +4,45 @@ import { supabase } from "@/integrations/supabase/client";
 export interface LensScore {
   score: number;
   reasoning: string;
-  codeInfluence?: string;
-  codeConstraint?: boolean;
+}
+
+export interface ViolationDetection {
+  hasViolation: boolean;
+  violatedCodes: string[];
+  violationSeverity: "none" | "tension" | "single_violation" | "multi_violation";
+  violationDetails: string;
 }
 
 export interface EthicsAnalysis {
   lensScores: {
-    duty: LensScore;
     utilitarian: LensScore;
-    rights: LensScore;
+    duty: LensScore;
     justice: LensScore;
     virtue: LensScore;
     care: LensScore;
+    commonGood: LensScore;
   };
   compositeScore: number;
-  lensAverage: number;
-  codeComplianceScore: number;
-  weightingFormula: string;
-  ethicalStability: "unstable" | "stable" | "robust";
+  ethicalStability: "Stable" | "Contested" | "Ethically Unstable";
   conflictLevel: 1 | 2 | 3;
   conflictAnalysis: {
     primaryTensions: string[];
     professionalCodeImplications: Record<string, string>;
   };
-  recommendedActions: string[];
+  violationDetection: ViolationDetection;
+  analyticalObservations: string[];
   questionsForReflection: string[];
   warningFlags: string[];
+  _internal?: {
+    lensAverage: number;
+    codeScore: number;
+    lensComponent: number;
+    codeComponent: number;
+    lensStdDev: number;
+    weightingFormula: string;
+  };
+  _guardrailsApplied?: boolean;
+  _algorithmVersion?: string;
 }
 
 export interface AnalysisRequest {
@@ -37,6 +50,7 @@ export interface AnalysisRequest {
   narrative: string;
   stakeholders: string;
   selectedCodes: string[];
+  lensScores?: Record<string, number>;
 }
 
 export async function analyzeCase(request: AnalysisRequest): Promise<EthicsAnalysis> {
@@ -46,6 +60,7 @@ export async function analyzeCase(request: AnalysisRequest): Promise<EthicsAnaly
       narrative: request.narrative,
       stakeholders: request.stakeholders,
       selectedCodes: request.selectedCodes,
+      lensScores: request.lensScores,
     },
   });
 
@@ -53,7 +68,6 @@ export async function analyzeCase(request: AnalysisRequest): Promise<EthicsAnaly
     throw new Error(error.message || "Failed to analyze case");
   }
 
-  // Handle error responses from the edge function
   if (data?.error) {
     throw new Error(data.error);
   }

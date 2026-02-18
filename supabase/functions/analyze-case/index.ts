@@ -9,16 +9,18 @@ const corsHeaders = {
 const SYSTEM_PROMPT = `You are an expert ethics analysis engine for occupational safety and health professionals. You analyze ethical dilemmas through six ethical lenses and integrate professional codes of conduct.
 
 ## YOUR TASK
-Analyze the provided case through all 6 ethical lenses, integrate relevant professional codes, detect conflicts, and return a structured JSON analysis.
+Analyze the provided case through all 6 ethical lenses, detect professional code violations and conflicts, and return a structured JSON analysis with qualitative reasoning.
 
-## SIX ETHICAL LENSES (each scored 1-10, where 1 = very low ethical alignment, 10 = very high ethical alignment)
+CRITICAL: You provide QUALITATIVE REASONING ONLY. All numeric scores, classifications, and labels are computed deterministically by a post-processing guardrails layer. Do NOT assign numeric scores. Do NOT classify ethical stability. Do NOT use prescriptive language.
 
-1. **Duty / Deontological** - Professional obligations, rules, codes of conduct. What does duty demand?
-2. **Utilitarian / Consequentialist** - Greatest good for greatest number. What produces the best outcomes?
-3. **Rights-Based** - Individual rights protection. Are anyone's fundamental rights at stake?
-4. **Justice / Fairness** - Equitable treatment across all stakeholders. Is the situation fair?
-5. **Virtue Ethics** - Character and professional integrity. What would a person of good character do?
-6. **Care Ethics** - Relationships and vulnerable populations. Who needs protection?
+## SIX ETHICAL LENSES
+
+1. **Utilitarian / Consequentialist** - Greatest good for greatest number. What produces the best outcomes?
+2. **Deontological / Duty** - Professional obligations, rules, codes of conduct. What does duty demand?
+3. **Justice / Fairness** - Equitable treatment across all stakeholders. Is the situation fair?
+4. **Virtue Ethics** - Character and professional integrity. What would a person of good character do?
+5. **Care Ethics** - Relationships and vulnerable populations. Who needs protection?
+6. **Common Good** - Shared conditions and community welfare. What serves the broader community?
 
 ## PROFESSIONAL CODES KNOWLEDGE
 
@@ -48,27 +50,20 @@ Analyze the provided case through all 6 ethical lenses, integrate relevant profe
 - Report workplace hazards truthfully
 - Maintain independence of professional judgment from employer pressure
 
-## SCORING RULES (CRITICAL - YOU MUST FOLLOW THESE)
+## VIOLATION DETECTION RULES
 
-1. Professional codes INFORM but don't replace lenses. They CONSTRAIN Duty, Rights, and Justice scores.
-2. If a mandatory professional code obligation is clearly violated in the scenario:
-   - Duty lens CANNOT exceed 4/10
-   - Rights lens CANNOT exceed 4/10
-   - The case MUST be flagged as "ethically unstable"
-3. Multi-code conflict handling:
-   - Single-code tension → conflictLevel minimum 2
-   - Multi-code disagreement → conflictLevel minimum 3
-4. Conflict severity is determined by lens score divergence:
-   - Level 1: All lens scores within 2 points of each other (minor tension)
-   - Level 2: Any lens scores 3-5 points apart (significant conflict)
-   - Level 3: Any lens scores >5 points apart OR code violations detected (ethical dilemma)
-5. Ethical stability:
-   - "robust": conflictLevel 1 AND no code violations AND compositeScore >= 7
-   - "stable": conflictLevel <= 2 AND no code violations
-   - "unstable": conflictLevel 3 OR any code violation detected
+For each selected professional code, you MUST determine:
+1. Whether a clear violation of that code exists in the scenario
+2. Whether ethical tension/ambiguity exists without explicit violation
+3. Whether multiple codes are simultaneously violated
 
-## compositeScore Calculation
-Average of all 6 lens scores, rounded to 1 decimal place.`;
+## NON-ADVISORY LANGUAGE CONSTRAINT
+
+Your reasoning MUST:
+- Use structured analytical language only
+- Avoid prescriptive directives ("You should", "They must", "It is recommended")
+- Avoid definitive recommendations
+- Frame observations analytically ("This situation presents...", "The tension between...", "Analysis indicates...")`;
 
 const USER_PROMPT_TEMPLATE = (
   title: string,
@@ -89,40 +84,41 @@ const USER_PROMPT_TEMPLATE = (
 Analyze this case and return ONLY valid JSON matching this exact structure (no markdown, no code fences, just the JSON object):
 
 {
-  "lensScores": {
-    "duty": { "score": <1-10>, "reasoning": "<2-3 sentences>", "codeInfluence": "<how selected professional codes affect this score>" },
-    "utilitarian": { "score": <1-10>, "reasoning": "<2-3 sentences>" },
-    "rights": { "score": <1-10>, "reasoning": "<2-3 sentences>", "codeConstraint": <true if code violation caps this score> },
-    "justice": { "score": <1-10>, "reasoning": "<2-3 sentences>" },
-    "virtue": { "score": <1-10>, "reasoning": "<2-3 sentences>" },
-    "care": { "score": <1-10>, "reasoning": "<2-3 sentences>" }
+  "lensReasoning": {
+    "utilitarian": "<2-3 sentences of analytical reasoning>",
+    "duty": "<2-3 sentences of analytical reasoning>",
+    "justice": "<2-3 sentences of analytical reasoning>",
+    "virtue": "<2-3 sentences of analytical reasoning>",
+    "care": "<2-3 sentences of analytical reasoning>",
+    "commonGood": "<2-3 sentences of analytical reasoning>"
   },
-  "compositeScore": <average of all 6 scores, 1 decimal>,
-  "ethicalStability": "<unstable|stable|robust>",
-  "conflictLevel": <1|2|3>,
+  "violationDetection": {
+    "hasViolation": <true|false>,
+    "violatedCodes": ["<CODE_ID if violated>"],
+    "violationSeverity": "<none|tension|single_violation|multi_violation>",
+    "violationDetails": "<explanation of what violation exists and why>"
+  },
   "conflictAnalysis": {
     "primaryTensions": ["<tension description>", ...],
     "professionalCodeImplications": {
-      "<CODE_ID>": "<how this code applies and any conflicts>",
+      "<CODE_ID>": "<how this code applies and any conflicts — analytical language only>",
       ...
     }
   },
-  "recommendedActions": ["<action 1>", "<action 2>", "<action 3>"],
+  "analyticalObservations": ["<observation 1>", "<observation 2>", "<observation 3>"],
   "questionsForReflection": ["<question 1>", "<question 2>", "<question 3>"],
-  "warningFlags": ["<flag if applicable>", ...],
-  "codeComplianceScores": {
-    "<CODE_ID>": <1-10 compliance score>,
-    ...
-  }
+  "warningFlags": ["<flag if applicable>", ...]
 }
 
-Additionally, for EACH selected professional code, provide a numeric compliance score (1-10) in the "codeComplianceScores" field, where 1 = severe violation and 10 = full compliance.
+CRITICAL REMINDERS:
+- Do NOT include any numeric scores. Scores are computed deterministically.
+- Do NOT classify stability. Classification is computed deterministically.
+- Do NOT use prescriptive language ("should", "must", "recommended"). Use analytical framing only.
+- For violationSeverity: use "none" if no issues, "tension" for ambiguity, "single_violation" for one code violated, "multi_violation" for 2+ codes violated.`;
 
-Remember: Apply the scoring constraint rules. If a professional code is clearly being violated, cap Duty and Rights at 4 and mark as unstable.`;
-
-// ===== DETERMINISTIC GUARDRAILS (Algorithm v1.2) =====
-// Enforces Mark's spec rules AFTER AI generates reasoning.
-// The AI provides rich narrative; this layer enforces hard constraints.
+// ===== DETERMINISTIC GUARDRAILS (Algorithm v2.0 — Mark's Book Spec) =====
+// All numeric scoring, classification, and weighting is handled here.
+// AI provides qualitative reasoning only.
 
 function clampScore(score: unknown): number {
   const n = Number(score);
@@ -130,108 +126,124 @@ function clampScore(score: unknown): number {
   return Math.max(1, Math.min(10, Math.round(n)));
 }
 
-function applyGuardrails(raw: Record<string, unknown>): Record<string, unknown> {
-  const lensScores = (raw.lensScores ?? {}) as Record<string, Record<string, unknown>>;
-  const lensKeys = ["duty", "utilitarian", "rights", "justice", "virtue", "care"];
+function standardDeviation(values: number[]): number {
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const squaredDiffs = values.map((v) => Math.pow(v - mean, 2));
+  return Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / values.length);
+}
 
-  // 1. Clamp all scores to 1-10 integers
+function applyGuardrails(
+  raw: Record<string, unknown>,
+  lensInputScores: Record<string, number>
+): Record<string, unknown> {
+  const lensKeys = ["utilitarian", "duty", "justice", "virtue", "care", "commonGood"];
+
+  // 1. Build lens scores from USER-PROVIDED inputs (integers 1-10)
+  const lensScores: Record<string, Record<string, unknown>> = {};
+  const lensReasoning = (raw.lensReasoning ?? {}) as Record<string, string>;
+
   for (const key of lensKeys) {
-    if (lensScores[key]) {
-      lensScores[key].score = clampScore(lensScores[key].score);
-    } else {
-      lensScores[key] = { score: 5, reasoning: "No data provided by analysis." };
-    }
+    lensScores[key] = {
+      score: clampScore(lensInputScores[key] ?? 5),
+      reasoning: lensReasoning[key] || "No analysis provided.",
+    };
   }
 
-  // 2. Detect code violations (AI flags codeConstraint=true on rights or duty)
-  const hasCodeViolation =
-    lensScores.duty?.codeConstraint === true ||
-    lensScores.rights?.codeConstraint === true ||
-    (raw.warningFlags as string[] ?? []).some(
-      (f: string) => typeof f === "string" && f.toLowerCase().includes("violation")
-    );
-
-  // 3. If code violation detected, cap Duty and Rights at 4
-  if (hasCodeViolation) {
-    lensScores.duty.score = Math.min(lensScores.duty.score as number, 4);
-    lensScores.duty.codeConstraint = true;
-    lensScores.rights.score = Math.min(lensScores.rights.score as number, 4);
-    lensScores.rights.codeConstraint = true;
-  }
-
-  // 4. Calculate lens average (30% of composite)
+  // 2. Compute Lens Average
   const scores = lensKeys.map((k) => lensScores[k].score as number);
   const lensAverage = Math.round((scores.reduce((a, b) => a + b, 0) / 6) * 10) / 10;
 
-  // 5. Calculate code compliance score (70% of composite)
-  const codeComplianceScores = (raw.codeComplianceScores ?? {}) as Record<string, number>;
-  const codeScoreValues = Object.values(codeComplianceScores).map((s) => {
-    const n = Number(s);
-    return isNaN(n) ? 5 : Math.max(1, Math.min(10, Math.round(n)));
-  });
-  // If code violation detected, cap all code compliance scores at 4
-  if (hasCodeViolation) {
-    for (let i = 0; i < codeScoreValues.length; i++) {
-      codeScoreValues[i] = Math.min(codeScoreValues[i], 4);
+  // 3. Determine Code Compliance Score deterministically from violation detection
+  const violationDetection = (raw.violationDetection ?? {}) as Record<string, unknown>;
+  const violationSeverity = (violationDetection.violationSeverity as string) || "none";
+  const hasViolation = violationDetection.hasViolation === true;
+  const warningFlags = Array.isArray(raw.warningFlags) ? [...raw.warningFlags] : [];
+
+  // Also check warning flags for violation keywords as fallback
+  const flagsIndicateViolation = warningFlags.some(
+    (f: string) => typeof f === "string" && f.toLowerCase().includes("violation")
+  );
+
+  let codeScore: number;
+  if (violationSeverity === "multi_violation" || (hasViolation && flagsIndicateViolation)) {
+    // Check if multi-code
+    const violatedCodes = (violationDetection.violatedCodes as string[]) || [];
+    if (violatedCodes.length >= 2 || violationSeverity === "multi_violation") {
+      codeScore = 1;
+    } else {
+      codeScore = 3;
     }
+  } else if (violationSeverity === "single_violation" || hasViolation) {
+    codeScore = 3;
+  } else if (violationSeverity === "tension") {
+    codeScore = 6;
+  } else {
+    codeScore = 9;
   }
-  const codeComplianceAvg = codeScoreValues.length > 0
-    ? Math.round((codeScoreValues.reduce((a, b) => a + b, 0) / codeScoreValues.length) * 10) / 10
-    : 5; // default if no codes provided
 
-  // 6. Composite = 70% code compliance + 30% lens average
-  const compositeScore = Math.round((0.70 * codeComplianceAvg + 0.30 * lensAverage) * 10) / 10;
+  const anyViolation = hasViolation || flagsIndicateViolation ||
+    violationSeverity === "single_violation" || violationSeverity === "multi_violation";
 
-  // 5. Determine conflict level from score divergence
-  const maxScore = Math.max(...scores);
-  const minScore = Math.min(...scores);
-  const divergence = maxScore - minScore;
+  // 4. Compute components
+  const lensComponent = lensAverage * 0.30;
+  const codeComponent = codeScore * 0.70;
+  let finalScore = Math.round((lensComponent + codeComponent) * 10) / 10;
+
+  // 5. Cap rule: if any violation, final composite ≤ 4.9
+  if (anyViolation) {
+    finalScore = Math.min(finalScore, 4.9);
+  }
+
+  // 6. Conflict & Stability Classification (deterministic)
+  const stdDev = standardDeviation(scores);
 
   let conflictLevel: number;
-  if (divergence > 5 || hasCodeViolation) {
+  let ethicalStability: string;
+
+  if (anyViolation || violationSeverity === "multi_violation") {
     conflictLevel = 3;
-  } else if (divergence >= 3) {
+    ethicalStability = "Ethically Unstable";
+  } else if (stdDev > 2.5 || violationSeverity === "tension") {
     conflictLevel = 2;
+    ethicalStability = "Contested";
   } else {
     conflictLevel = 1;
+    ethicalStability = "Stable";
   }
 
-  // 6. Enforce multi-code conflict minimums
-  const codeImplications = (raw.conflictAnalysis as Record<string, unknown>)?.professionalCodeImplications as Record<string, string> ?? {};
-  const codeCount = Object.keys(codeImplications).length;
-  if (codeCount >= 2) {
-    conflictLevel = Math.max(conflictLevel, 3);
-  } else if (codeCount === 1) {
-    conflictLevel = Math.max(conflictLevel, 2);
+  // Multi-code violation override
+  const violatedCodes = (violationDetection.violatedCodes as string[]) || [];
+  if (violatedCodes.length >= 2) {
+    conflictLevel = 3;
+    ethicalStability = "Ethically Unstable";
   }
 
-  // 7. Determine ethical stability deterministically
-  let ethicalStability: string;
-  if (conflictLevel === 3 || hasCodeViolation) {
-    ethicalStability = "unstable";
-  } else if (conflictLevel <= 1 && !hasCodeViolation && compositeScore >= 7) {
-    ethicalStability = "robust";
-  } else {
-    ethicalStability = "stable";
-  }
-
-  // 8. Ensure warningFlags is always an array
-  const warningFlags = Array.isArray(raw.warningFlags) ? raw.warningFlags : [];
-  if (hasCodeViolation && !warningFlags.some((f: string) => f.toLowerCase().includes("violation"))) {
-    warningFlags.push("Professional code violation detected — scores constrained by guardrails.");
+  // Add warning if violation detected
+  if (anyViolation && !warningFlags.some((f: string) => f.toLowerCase().includes("violation"))) {
+    warningFlags.push("Professional code violation detected — composite score capped at 4.9.");
   }
 
   return {
-    ...raw,
     lensScores,
-    lensAverage,
-    codeComplianceScore: codeComplianceAvg,
-    compositeScore,
-    weightingFormula: "70% professional code compliance + 30% ethical lens average",
-    conflictLevel,
+    compositeScore: finalScore,
     ethicalStability,
+    conflictLevel,
+    conflictAnalysis: raw.conflictAnalysis ?? { primaryTensions: [], professionalCodeImplications: {} },
+    analyticalObservations: raw.analyticalObservations ?? [],
+    questionsForReflection: raw.questionsForReflection ?? [],
     warningFlags,
+    violationDetection,
+    // Internal fields — persisted for research dataset integrity but not displayed
+    _internal: {
+      lensAverage,
+      codeScore,
+      lensComponent: Math.round(lensComponent * 10) / 10,
+      codeComponent: Math.round(codeComponent * 10) / 10,
+      lensStdDev: Math.round(stdDev * 100) / 100,
+      weightingFormula: "70% professional code compliance + 30% ethical lens average",
+    },
     _guardrailsApplied: true,
+    _algorithmVersion: "2.0",
   };
 }
 
@@ -241,7 +253,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, narrative, stakeholders, selectedCodes } = await req.json();
+    const { title, narrative, stakeholders, selectedCodes, lensScores: userLensScores } = await req.json();
 
     if (!title || !narrative || !selectedCodes?.length) {
       return new Response(
@@ -249,6 +261,11 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Default lens scores if not provided (backwards compatibility)
+    const lensInputScores = userLensScores ?? {
+      utilitarian: 5, duty: 5, justice: 5, virtue: 5, care: 5, commonGood: 5,
+    };
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
@@ -300,17 +317,17 @@ serve(async (req) => {
       throw new Error("No content in Gemini response");
     }
 
-    // Parse the JSON from the response, handling potential markdown fences
+    // Parse the JSON from the response
     let analysisJson: string = content;
     const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) {
       analysisJson = jsonMatch[1].trim();
     }
 
-    const analysis = JSON.parse(analysisJson);
+    const aiOutput = JSON.parse(analysisJson);
 
-    // ===== POST-PROCESSING GUARDRAILS (Algorithm v1.2) =====
-    const enforced = applyGuardrails(analysis);
+    // ===== DETERMINISTIC GUARDRAILS (Algorithm v2.0) =====
+    const enforced = applyGuardrails(aiOutput, lensInputScores);
 
     return new Response(JSON.stringify(enforced), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

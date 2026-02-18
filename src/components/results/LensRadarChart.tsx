@@ -2,12 +2,12 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import type { EthicsAnalysis } from "@/services/aiAnalysis";
 
 const LENS_LABELS: Record<string, string> = {
-  duty: "Duty",
   utilitarian: "Utilitarian",
-  rights: "Rights",
+  duty: "Duty",
   justice: "Justice",
   virtue: "Virtue",
   care: "Care",
+  commonGood: "Common Good",
 };
 
 interface LensRadarChartProps {
