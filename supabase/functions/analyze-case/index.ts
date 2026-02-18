@@ -109,8 +109,14 @@ Analyze this case and return ONLY valid JSON matching this exact structure (no m
   },
   "recommendedActions": ["<action 1>", "<action 2>", "<action 3>"],
   "questionsForReflection": ["<question 1>", "<question 2>", "<question 3>"],
-  "warningFlags": ["<flag if applicable>", ...]
+  "warningFlags": ["<flag if applicable>", ...],
+  "codeComplianceScores": {
+    "<CODE_ID>": <1-10 compliance score>,
+    ...
+  }
 }
+
+Additionally, for EACH selected professional code, provide a numeric compliance score (1-10) in the "codeComplianceScores" field, where 1 = severe violation and 10 = full compliance.
 
 Remember: Apply the scoring constraint rules. If a professional code is clearly being violated, cap Duty and Rights at 4 and mark as unstable.`;
 
@@ -153,9 +159,28 @@ function applyGuardrails(raw: Record<string, unknown>): Record<string, unknown> 
     lensScores.rights.codeConstraint = true;
   }
 
-  // 4. Recalculate compositeScore deterministically
+  // 4. Calculate lens average (30% of composite)
   const scores = lensKeys.map((k) => lensScores[k].score as number);
-  const compositeScore = Math.round((scores.reduce((a, b) => a + b, 0) / 6) * 10) / 10;
+  const lensAverage = Math.round((scores.reduce((a, b) => a + b, 0) / 6) * 10) / 10;
+
+  // 5. Calculate code compliance score (70% of composite)
+  const codeComplianceScores = (raw.codeComplianceScores ?? {}) as Record<string, number>;
+  const codeScoreValues = Object.values(codeComplianceScores).map((s) => {
+    const n = Number(s);
+    return isNaN(n) ? 5 : Math.max(1, Math.min(10, Math.round(n)));
+  });
+  // If code violation detected, cap all code compliance scores at 4
+  if (hasCodeViolation) {
+    for (let i = 0; i < codeScoreValues.length; i++) {
+      codeScoreValues[i] = Math.min(codeScoreValues[i], 4);
+    }
+  }
+  const codeComplianceAvg = codeScoreValues.length > 0
+    ? Math.round((codeScoreValues.reduce((a, b) => a + b, 0) / codeScoreValues.length) * 10) / 10
+    : 5; // default if no codes provided
+
+  // 6. Composite = 70% code compliance + 30% lens average
+  const compositeScore = Math.round((0.70 * codeComplianceAvg + 0.30 * lensAverage) * 10) / 10;
 
   // 5. Determine conflict level from score divergence
   const maxScore = Math.max(...scores);
@@ -199,7 +224,10 @@ function applyGuardrails(raw: Record<string, unknown>): Record<string, unknown> 
   return {
     ...raw,
     lensScores,
+    lensAverage,
+    codeComplianceScore: codeComplianceAvg,
     compositeScore,
+    weightingFormula: "70% professional code compliance + 30% ethical lens average",
     conflictLevel,
     ethicalStability,
     warningFlags,

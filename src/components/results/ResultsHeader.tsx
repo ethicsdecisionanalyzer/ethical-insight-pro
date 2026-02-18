@@ -37,6 +37,10 @@ export function ResultsHeader({ caseData, analysis }: ResultsHeaderProps) {
             {analysis.compositeScore}
           </div>
           <p className="text-xs text-muted-foreground mt-2">Composite Score / 10</p>
+          <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+            <p>Code Compliance: <span className="font-semibold text-foreground">{analysis.codeComplianceScore ?? "—"}/10</span> <span className="opacity-70">(70%)</span></p>
+            <p>Lens Average: <span className="font-semibold text-foreground">{analysis.lensAverage ?? "—"}/10</span> <span className="opacity-70">(30%)</span></p>
+          </div>
         </div>
 
         {/* Case info */}
