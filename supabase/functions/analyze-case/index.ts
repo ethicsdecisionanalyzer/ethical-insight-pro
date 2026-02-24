@@ -11,7 +11,20 @@ const SYSTEM_PROMPT = `You are an expert ethics analysis engine for occupational
 ## YOUR TASK
 Analyze the provided case through all 6 ethical lenses, detect professional code violations and conflicts, and return a structured JSON analysis with qualitative reasoning.
 
-CRITICAL: You provide QUALITATIVE REASONING ONLY. All numeric scores, classifications, and labels are computed deterministically by a post-processing guardrails layer. Do NOT assign numeric scores. Do NOT classify ethical stability. Do NOT use prescriptive language.
+CRITICAL: You provide QUALITATIVE REASONING and NUMERIC ALIGNMENT SCORES (1-10 integer) for each ethical lens. Do NOT classify ethical stability — that is computed deterministically by a post-processing guardrails layer. Do NOT use prescriptive language ("should", "must", "recommended"). Use analytical framing only.
+
+SCORING GUIDELINES:
+For each lens, assign an integer score from 1 to 10 representing how well the described situation aligns with that ethical perspective:
+- 1-3: The situation significantly conflicts with or undermines this ethical lens
+- 4-6: The situation shows mixed alignment, tension, or ambiguity under this lens
+- 7-10: The situation aligns well with or supports this ethical lens
+
+SCORING RULES:
+- Base scores strictly on the narrative content provided.
+- Be analytically rigorous — different lenses WILL often produce different scores for the same case. This divergence is expected and correct.
+- Do not default to middle-range scores. Differentiate meaningfully based on the specific facts of the case.
+- A case describing a clear violation of professional duty should score LOW on the duty lens, even if other lenses score higher.
+- A case where outcomes benefit the majority but harm a minority should reflect that tension between utilitarian (potentially high) and care/justice (potentially low).
 
 ## SIX ETHICAL LENSES
 
@@ -84,13 +97,13 @@ const USER_PROMPT_TEMPLATE = (
 Analyze this case and return ONLY valid JSON matching this exact structure (no markdown, no code fences, just the JSON object):
 
 {
-  "lensReasoning": {
-    "utilitarian": "<2-3 sentences of analytical reasoning>",
-    "duty": "<2-3 sentences of analytical reasoning>",
-    "justice": "<2-3 sentences of analytical reasoning>",
-    "virtue": "<2-3 sentences of analytical reasoning>",
-    "care": "<2-3 sentences of analytical reasoning>",
-    "commonGood": "<2-3 sentences of analytical reasoning>"
+  "lensAnalysis": {
+    "utilitarian": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning>" },
+    "duty": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning>" },
+    "justice": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning>" },
+    "virtue": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning>" },
+    "care": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning>" },
+    "commonGood": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning>" }
   },
   "violationDetection": {
     "hasViolation": <true|false>,
@@ -111,14 +124,15 @@ Analyze this case and return ONLY valid JSON matching this exact structure (no m
 }
 
 CRITICAL REMINDERS:
-- Do NOT include any numeric scores. Scores are computed deterministically.
+- Include a numeric alignment score (integer 1-10) for each lens based on your analysis of the narrative. Scores will be validated and clamped by the deterministic guardrails layer.
 - Do NOT classify stability. Classification is computed deterministically.
 - Do NOT use prescriptive language ("should", "must", "recommended"). Use analytical framing only.
 - For violationSeverity: use "none" if no issues, "tension" for ambiguity, "single_violation" for one code violated, "multi_violation" for 2+ codes violated.`;
 
-// ===== DETERMINISTIC GUARDRAILS (Algorithm v2.0 — Mark's Book Spec) =====
-// All numeric scoring, classification, and weighting is handled here.
-// AI provides qualitative reasoning only.
+// ===== DETERMINISTIC GUARDRAILS (Algorithm v2.0.1 — Mark's Book Spec) =====
+// AI provides qualitative reasoning AND numeric lens alignment scores.
+// This layer validates, clamps, and applies deterministic composite scoring,
+// stability classification, and violation enforcement.
 
 function clampScore(score: unknown): number {
   const n = Number(score);
@@ -133,19 +147,19 @@ function standardDeviation(values: number[]): number {
 }
 
 function applyGuardrails(
-  raw: Record<string, unknown>,
-  lensInputScores: Record<string, number>
+  raw: Record<string, unknown>
 ): Record<string, unknown> {
   const lensKeys = ["utilitarian", "duty", "justice", "virtue", "care", "commonGood"];
 
-  // 1. Build lens scores from USER-PROVIDED inputs (integers 1-10)
+  // 1. Build lens scores from AI-COMPUTED analysis (integers 1-10, clamped by guardrails)
   const lensScores: Record<string, Record<string, unknown>> = {};
-  const lensReasoning = (raw.lensReasoning ?? {}) as Record<string, string>;
+  const lensAnalysis = (raw.lensAnalysis ?? {}) as Record<string, Record<string, unknown>>;
 
   for (const key of lensKeys) {
+    const lensData = lensAnalysis[key] ?? {};
     lensScores[key] = {
-      score: clampScore(lensInputScores[key] ?? 5),
-      reasoning: lensReasoning[key] || "No analysis provided.",
+      score: clampScore(lensData.score ?? 5),
+      reasoning: (lensData.reasoning as string) || "No analysis provided.",
     };
   }
 
@@ -243,7 +257,7 @@ function applyGuardrails(
       weightingFormula: "70% professional code compliance + 30% ethical lens average",
     },
     _guardrailsApplied: true,
-    _algorithmVersion: "2.0",
+    _algorithmVersion: "2.0.1",
   };
 }
 
@@ -253,7 +267,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, narrative, stakeholders, selectedCodes, lensScores: userLensScores } = await req.json();
+    const { title, narrative, stakeholders, selectedCodes } = await req.json();
 
     if (!title || !narrative || !selectedCodes?.length) {
       return new Response(
@@ -261,11 +275,6 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Default lens scores if not provided (backwards compatibility)
-    const lensInputScores = userLensScores ?? {
-      utilitarian: 5, duty: 5, justice: 5, virtue: 5, care: 5, commonGood: 5,
-    };
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
@@ -327,7 +336,7 @@ serve(async (req) => {
     const aiOutput = JSON.parse(analysisJson);
 
     // ===== DETERMINISTIC GUARDRAILS (Algorithm v2.0) =====
-    const enforced = applyGuardrails(aiOutput, lensInputScores);
+    const enforced = applyGuardrails(aiOutput);
 
     return new Response(JSON.stringify(enforced), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

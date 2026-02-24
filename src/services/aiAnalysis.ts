@@ -50,7 +50,6 @@ export interface AnalysisRequest {
   narrative: string;
   stakeholders: string;
   selectedCodes: string[];
-  lensScores?: Record<string, number>;
 }
 
 export async function analyzeCase(request: AnalysisRequest): Promise<EthicsAnalysis> {
@@ -60,7 +59,6 @@ export async function analyzeCase(request: AnalysisRequest): Promise<EthicsAnaly
       narrative: request.narrative,
       stakeholders: request.stakeholders,
       selectedCodes: request.selectedCodes,
-      lensScores: request.lensScores,
     },
   });
 
