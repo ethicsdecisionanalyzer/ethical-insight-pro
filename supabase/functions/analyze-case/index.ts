@@ -26,14 +26,70 @@ SCORING RULES:
 - A case describing a clear violation of professional duty should score LOW on the duty lens, even if other lenses score higher.
 - A case where outcomes benefit the majority but harm a minority should reflect that tension between utilitarian (potentially high) and care/justice (potentially low).
 
-## SIX ETHICAL LENSES
+## SIX ETHICAL LENSES — CANONICAL OPERATIONAL DEFINITIONS
 
-1. **Utilitarian / Consequentialist** - Greatest good for greatest number. What produces the best outcomes?
-2. **Deontological / Duty** - Professional obligations, rules, codes of conduct. What does duty demand?
-3. **Justice / Fairness** - Equitable treatment across all stakeholders. Is the situation fair?
-4. **Virtue Ethics** - Character and professional integrity. What would a person of good character do?
-5. **Care Ethics** - Relationships and vulnerable populations. Who needs protection?
-6. **Common Good** - Shared conditions and community welfare. What serves the broader community?
+You MUST evaluate each case against these exact definitions and operational criteria. Your reasoning for each lens MUST explicitly reference the relevant operational criteria below. Do not introduce additional lenses, rename existing lenses, or reinterpret their definitions.
+
+### 1. UTILITARIAN (Consequences Lens)
+
+**Definition:** Evaluate the action based on the overall balance of benefits and harms. Consider both short-term and long-term outcomes for all affected stakeholders. Prioritize maximizing aggregate well-being and minimizing aggregate harm.
+
+**Operational Criteria:**
+- Number of individuals affected
+- Severity of benefit or harm
+- Duration of impact
+- Probability and foreseeability of outcomes
+
+### 2. DEONTOLOGICAL (Duties / Rights Lens)
+
+**Definition:** Evaluate whether the action respects moral duties, professional obligations, and individual rights independent of outcomes. Emphasize transparency, truthfulness, and respect for autonomy.
+
+**Operational Criteria:**
+- Adherence to professional duties
+- Respect for informed consent
+- Truthful disclosure
+- Avoidance of deception
+- Respect for autonomy and dignity
+
+### 3. JUSTICE / FAIRNESS Lens
+
+**Definition:** Evaluate whether benefits and burdens are distributed equitably. Assess procedural fairness and impartiality.
+
+**Operational Criteria:**
+- Equal treatment of similarly situated parties
+- Absence of favoritism
+- Fair access to protections
+- Procedural transparency
+
+### 4. VIRTUE Lens
+
+**Definition:** Evaluate whether the action reflects professional character traits such as integrity, courage, honesty, and prudence.
+
+**Operational Criteria:**
+- Integrity under pressure
+- Moral courage
+- Consistency of character
+- Accountability
+
+### 5. CARE Lens
+
+**Definition:** Evaluate whether the action reflects empathy, relational responsibility, and attentiveness to vulnerability.
+
+**Operational Criteria:**
+- Protection of vulnerable individuals
+- Recognition of relational impact
+- Responsiveness to harm concerns
+- Demonstrated concern for well-being
+
+### 6. COMMON GOOD Lens
+
+**Definition:** Evaluate whether the action supports institutional trust, societal welfare, and long-term sustainability beyond individual interests.
+
+**Operational Criteria:**
+- Institutional trust
+- Public confidence
+- Long-term sustainability
+- Broader community impact
 
 ## PROFESSIONAL CODES KNOWLEDGE
 
@@ -98,12 +154,12 @@ Analyze this case and return ONLY valid JSON matching this exact structure (no m
 
 {
   "lensAnalysis": {
-    "utilitarian": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning>" },
-    "duty": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning>" },
-    "justice": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning>" },
-    "virtue": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning>" },
-    "care": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning>" },
-    "commonGood": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning>" }
+    "utilitarian": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning explicitly referencing the operational criteria for this lens>" },
+    "duty": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning explicitly referencing the operational criteria for this lens>" },
+    "justice": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning explicitly referencing the operational criteria for this lens>" },
+    "virtue": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning explicitly referencing the operational criteria for this lens>" },
+    "care": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning explicitly referencing the operational criteria for this lens>" },
+    "commonGood": { "score": "<integer 1-10>", "reasoning": "<2-3 sentences of analytical reasoning explicitly referencing the operational criteria for this lens>" }
   },
   "violationDetection": {
     "hasViolation": <true|false>,
@@ -129,7 +185,7 @@ CRITICAL REMINDERS:
 - Do NOT use prescriptive language ("should", "must", "recommended"). Use analytical framing only.
 - For violationSeverity: use "none" if no issues, "tension" for ambiguity, "single_violation" for one code violated, "multi_violation" for 2+ codes violated.`;
 
-// ===== DETERMINISTIC GUARDRAILS (Algorithm v2.0.1 — Mark's Book Spec) =====
+// ===== DETERMINISTIC GUARDRAILS (Algorithm v2.1 — Mark's Book Spec) =====
 // AI provides qualitative reasoning AND numeric lens alignment scores.
 // This layer validates, clamps, and applies deterministic composite scoring,
 // stability classification, and violation enforcement.
@@ -257,7 +313,7 @@ function applyGuardrails(
       weightingFormula: "70% professional code compliance + 30% ethical lens average",
     },
     _guardrailsApplied: true,
-    _algorithmVersion: "2.0.1",
+    _algorithmVersion: "2.1",
   };
 }
 
