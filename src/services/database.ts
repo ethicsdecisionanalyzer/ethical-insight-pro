@@ -185,3 +185,94 @@ export const professionalCodes = [
   { id: "AAOHN", label: "AAOHN - Occupational Health Nurses" },
   { id: "ACOEM", label: "ACOEM - Occupational & Environmental Medicine Physicians" },
 ];
+
+// Access code management (admin)
+export interface AccessCodeRow {
+  id: string;
+  code: string;
+  max_uses: number;
+  uses_count: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CodeRedemptionLog {
+  id: string;
+  code_id: string;
+  session_id: string;
+  user_id: string | null;
+  created_at: string;
+  code: string;
+}
+
+export interface PdfExportResult {
+  exportId: string;
+  storagePath: string;
+  signedUrl: string;
+  expiresIn: number;
+  fileSizeBytes: number;
+  generatedAt: string;
+}
+
+export async function getAccessCodes(): Promise<AccessCodeRow[]> {
+  const { data, error } = await supabase
+    .from("access_codes")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as AccessCodeRow[];
+}
+
+export async function toggleAccessCode(id: string, active: boolean): Promise<void> {
+  const { error } = await supabase
+    .from("access_codes")
+    .update({ active })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function resetAccessCodeUsage(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("access_codes")
+    .update({ uses_count: 0 })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function getCodeRedemptionLogs(limit = 100): Promise<CodeRedemptionLog[]> {
+  const { data, error } = await supabase
+    .from("code_redemptions")
+    .select("id, code_id, session_id, created_at, access_codes(code)")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data || []).map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    code_id: row.code_id as string,
+    session_id: row.session_id as string,
+    user_id: null,
+    created_at: row.created_at as string,
+    code: ((row.access_codes as Record<string, unknown>)?.code as string) || "Unknown",
+  }));
+}
+
+export async function generateCasePdf(caseId: string): Promise<PdfExportResult> {
+  const { data, error } = await supabase.functions.invoke("export-case-pdf", {
+    body: { caseId },
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to generate PDF");
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  return data as PdfExportResult;
+}

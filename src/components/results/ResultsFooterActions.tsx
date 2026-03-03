@@ -1,18 +1,53 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Printer, ArrowLeft } from "lucide-react";
+import { FileDown, Printer, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
+import { generateCasePdf } from "@/services/database";
 
-export function ResultsFooterActions() {
+interface ResultsFooterActionsProps {
+  caseId: string;
+}
+
+export function ResultsFooterActions({ caseId }: ResultsFooterActionsProps) {
   const navigate = useNavigate();
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const result = await generateCasePdf(caseId);
+      const link = document.createElement("a");
+      link.href = result.signedUrl;
+      link.download = `ethics-analysis-${caseId.slice(0, 8)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({ title: "PDF Generated", description: "Your report is downloading." });
+    } catch (err) {
+      console.error("PDF export error:", err);
+      toast({
+        title: "Export Failed",
+        description: err instanceof Error ? err.message : "Could not generate PDF.",
+        variant: "destructive",
+      });
+    }
+    setExporting(false);
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap justify-center gap-3">
-        <Button onClick={() => window.print()} variant="outline" className="gap-2">
-          <Printer className="w-4 h-4" />
-          Print / Export PDF
+        <Button onClick={handleExportPdf} disabled={exporting} className="gap-2">
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+          {exporting ? "Generating..." : "Download PDF"}
         </Button>
-        <Button onClick={() => navigate("/")} className="gap-2">
+        <Button onClick={() => window.print()} variant="outline" className="gap-2 print:hidden">
+          <Printer className="w-4 h-4" />
+          Print
+        </Button>
+        <Button onClick={() => navigate("/")} variant="outline" className="gap-2">
           <ArrowLeft className="w-4 h-4" />
           Analyze Another Case
         </Button>

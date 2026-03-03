@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Milestone 2 Governance Verification — Algorithm v2.1</title>
+<style>
+  @page { size: letter; margin: 0.55in 0.5in; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #000; background: #fff; line-height: 1.4; }
+
+  .cover-bar { background: #000; color: #fff; padding: 20px 0; margin-bottom: 20px; }
+  .cover-bar .inner { max-width: 7in; margin: 0 auto; padding: 0 0.2in; }
+  .cover-bar h1 { font-size: 20pt; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .cover-bar .sub { font-size: 11pt; font-weight: 400; opacity: 0.92; }
+  .cover-bar .meta { font-size: 8pt; color: #aaa; margin-top: 5px; }
+
+  .content { max-width: 7in; margin: 0 auto; padding: 0 0.2in; }
+
+  h2 { font-size: 12.5pt; font-weight: 700; border-bottom: 1.5px solid #000; padding-bottom: 3px; margin: 22px 0 8px 0; }
+  h3 { font-size: 10pt; font-weight: 700; margin: 12px 0 4px 0; }
+  h4 { font-size: 9pt; font-weight: 700; margin: 8px 0 3px 0; }
+  p { margin-bottom: 6px; }
+  ul { margin: 3px 0 8px 18px; }
+  li { margin-bottom: 2px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 12px 0; font-size: 8.5pt; }
+  th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: #e8e8e8; font-weight: 700; }
+
+  .code-block { background: #f4f4f4; border: 1.5px solid #000; padding: 10px 14px; margin: 6px 0 12px 0; font-family: 'Consolas', 'Courier New', monospace; font-size: 7.5pt; white-space: pre-wrap; word-break: break-word; line-height: 1.35; page-break-inside: avoid; overflow-x: auto; }
+  .code-label { font-weight: 700; font-size: 8pt; margin-bottom: 3px; display: block; font-family: 'Segoe UI', Arial, sans-serif; }
+
+  .diagram { border: 1.5px solid #000; padding: 14px 16px; margin: 8px 0 14px 0; background: #fafafa; page-break-inside: avoid; }
+  .flow { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: nowrap; margin: 6px 0; }
+  .flow-box { border: 1.5px solid #000; padding: 6px 10px; text-align: center; min-width: 90px; background: #fff; }
+  .flow-box .label { font-weight: 700; font-size: 8.5pt; }
+  .flow-box .sub { font-size: 7pt; color: #555; margin-top: 1px; }
+  .flow-arrow { font-size: 14pt; font-weight: 700; padding: 0 4px; color: #000; }
+  .flow-label { font-size: 6.5pt; color: #555; text-align: center; margin-top: -3px; }
+
+  .check-row { display: flex; align-items: flex-start; margin: 4px 0; }
+  .check-mark { font-weight: 700; margin-right: 6px; font-size: 11pt; }
+  .check-text { flex: 1; }
+
+  .json-block { background: #f9f9f9; border: 1.5px solid #000; padding: 10px 14px; margin: 6px 0 12px 0; font-family: 'Consolas', 'Courier New', monospace; font-size: 7pt; white-space: pre-wrap; word-break: break-word; line-height: 1.3; page-break-inside: avoid; }
+
+  .section-tag { display: inline-block; background: #000; color: #fff; font-size: 7pt; font-weight: 700; padding: 2px 8px; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .note-box { border: 1.5px solid #000; padding: 8px 12px; margin: 8px 0 12px 0; background: #fff; font-size: 8.5pt; }
+  .note-box strong { font-size: 8.5pt; }
+
+  .sign-off { margin-top: 24px; border-top: 1.5px solid #000; padding-top: 8px; }
+  .footer { text-align: center; font-size: 7pt; color: #aaa; margin-top: 30px; }
+
+  @media print {
+    .cover-bar, th, .section-tag { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover-bar">
+  <div class="inner">
+    <h1>ETHICAL INSIGHT PRO</h1>
+    <div class="sub">Milestone 2 &mdash; Governance Verification Report</div>
+    <div class="meta">Algorithm v2.1 &nbsp;|&nbsp; February 26, 2026 &nbsp;|&nbsp; Reliy Dev Team</div>
+  </div>
+</div>
+
+<div class="content">
+
+<h2>Purpose</h2>
+<p>This document provides the four governance verification items requested prior to Milestone 2 release. Each section contains literal source material extracted from the deployed edge function (<code>supabase/functions/analyze-case/index.ts</code>, algorithm v2.1, commit <code>c7bded8</code>).</p>
+
+<!-- ══════════════ Q1: FULL SYSTEM PROMPT ══════════════ -->
+<h2>1. Full System Prompt Text (Literal)</h2>
+<p>Below is the <strong>exact, verbatim</strong> prompt embedded in the <code>SYSTEM_PROMPT</code> constant of the deployed edge function. Nothing is summarized or paraphrased.</p>
+
+<div class="code-block"><span class="code-label">SYSTEM_PROMPT (analyze-case/index.ts, line 12)</span>
+You are an expert ethics analysis engine for occupational safety and health
+professionals. You analyze ethical dilemmas through six ethical lenses and
+integrate professional codes of conduct.
+
+## YOUR TASK
+Analyze the provided case through all 6 ethical lenses, detect professional
+code violations and conflicts, and return a structured JSON analysis with
+qualitative reasoning.
+
+CRITICAL: You provide QUALITATIVE REASONING and NUMERIC ALIGNMENT SCORES
+(1-10 integer) for each ethical lens. Do NOT classify ethical stability —
+that is computed deterministically by a post-processing guardrails layer.
+Do NOT use prescriptive language ("should", "must", "recommended"). Use
+analytical framing only.
+
+SCORING GUIDELINES:
+For each lens, assign an integer score from 1 to 10 representing how well
+the described situation aligns with that ethical perspective:
+- 1-3: The situation significantly conflicts with or undermines this lens
+- 4-6: The situation shows mixed alignment, tension, or ambiguity
+- 7-10: The situation aligns well with or supports this ethical lens
+
+SCORING RULES:
+- Base scores strictly on the narrative content provided.
+- Be analytically rigorous — different lenses WILL often produce different
+  scores for the same case. This divergence is expected and correct.
+- Do not default to middle-range scores. Differentiate meaningfully based
+  on the specific facts of the case.
+- A case describing a clear violation of professional duty should score
+  LOW on the duty lens, even if other lenses score higher.
+- A case where outcomes benefit the majority but harm a minority should
+  reflect that tension between utilitarian (potentially high) and
+  care/justice (potentially low).
+
+## SIX ETHICAL LENSES — CANONICAL OPERATIONAL DEFINITIONS
+
+You MUST evaluate each case against these exact definitions and operational
+criteria. Your reasoning for each lens MUST explicitly reference the
+relevant operational criteria below. Do not introduce additional lenses,
+rename existing lenses, or reinterpret their definitions.
+
+### 1. UTILITARIAN (Consequences Lens)
+Definition: Evaluate the action based on the overall balance of benefits
+and harms. Consider both short-term and long-term outcomes for all affected
+stakeholders. Prioritize maximizing aggregate well-being and minimizing
+aggregate harm.
+Operational Criteria:
+  - Number of individuals affected
+  - Severity of benefit or harm
+  - Duration of impact
+  - Probability and foreseeability of outcomes
+
+### 2. DEONTOLOGICAL (Duties / Rights Lens)
+Definition: Evaluate whether the action respects moral duties, professional
+obligations, and individual rights independent of outcomes. Emphasize
+transparency, truthfulness, and respect for autonomy.
+Operational Criteria:
+  - Adherence to professional duties
+  - Respect for informed consent
+  - Truthful disclosure
+  - Avoidance of deception
+  - Respect for autonomy and dignity
+
+### 3. JUSTICE / FAIRNESS Lens
+Definition: Evaluate whether benefits and burdens are distributed
+equitably. Assess procedural fairness and impartiality.
+Operational Criteria:
+  - Equal treatment of similarly situated parties
+  - Absence of favoritism
+  - Fair access to protections
+  - Procedural transparency
+
+### 4. VIRTUE Lens
+Definition: Evaluate whether the action reflects professional character
+traits such as integrity, courage, honesty, and prudence.
+Operational Criteria:
+  - Integrity under pressure
+  - Moral courage
+  - Consistency of character
+  - Accountability
+
+### 5. CARE Lens
+Definition: Evaluate whether the action reflects empathy, relational
+responsibility, and attentiveness to vulnerability.
+Operational Criteria:
+  - Protection of vulnerable individuals
+  - Recognition of relational impact
+  - Responsiveness to harm concerns
+  - Demonstrated concern for well-being
+
+### 6. COMMON GOOD Lens
+Definition: Evaluate whether the action supports institutional trust,
+societal welfare, and long-term sustainability beyond individual interests.
+Operational Criteria:
+  - Institutional trust
+  - Public confidence
+  - Long-term sustainability
+  - Broader community impact
+
+## PROFESSIONAL CODES KNOWLEDGE
+
+### BCSP/ASSP
+- Hold paramount the safety, health, and welfare of the public
+- Be objective and truthful in professional reports and testimony
+- Issue public statements only in an objective and truthful manner
+- Avoid conflicts of interest and disclose those that cannot be avoided
+
+### AIHA/ABIH
+- Practice with integrity and competence
+- Maintain confidentiality of privileged information
+- Report findings accurately and without bias
+- Prioritize worker health and safety above employer demands
+- Report hazardous conditions to appropriate authorities when employers
+  fail to act
+
+### AAOHN
+- Advocate for the health and safety of workers
+- Maintain confidentiality within legal and ethical boundaries
+- Practice based on current scientific evidence
+- Support worker autonomy and informed consent
+
+### ACOEM
+- Act as impartial advocates for the health and well-being of workers
+- Use evidence-based practices in clinical decision-making
+- Recognize and manage conflicts of interest
+- Report workplace hazards truthfully
+- Maintain independence of professional judgment from employer pressure
+
+## VIOLATION DETECTION RULES
+For each selected professional code, you MUST determine:
+1. Whether a clear violation of that code exists in the scenario
+2. Whether ethical tension/ambiguity exists without explicit violation
+3. Whether multiple codes are simultaneously violated
+
+## NON-ADVISORY LANGUAGE CONSTRAINT
+Your reasoning MUST:
+- Use structured analytical language only
+- Avoid prescriptive directives ("You should", "They must", "It is
+  recommended")
+- Avoid definitive recommendations
+- Frame observations analytically ("This situation presents...", "The
+  tension between...", "Analysis indicates...")</div>
+
+<h3>JSON Response Schema (USER_PROMPT_TEMPLATE)</h3>
+<p>The AI is instructed to return <strong>only</strong> valid JSON matching this exact structure:</p>
+
+<div class="code-block"><span class="code-label">Required JSON Schema (analyze-case/index.ts, USER_PROMPT_TEMPLATE)</span>
+{
+  "lensAnalysis": {
+    "utilitarian": {
+      "score": "&lt;integer 1-10&gt;",
+      "reasoning": "&lt;2-3 sentences explicitly referencing operational criteria&gt;"
+    },
+    "duty":       { "score": "...", "reasoning": "..." },
+    "justice":    { "score": "...", "reasoning": "..." },
+    "virtue":     { "score": "...", "reasoning": "..." },
+    "care":       { "score": "...", "reasoning": "..." },
+    "commonGood": { "score": "...", "reasoning": "..." }
+  },
+  "violationDetection": {
+    "hasViolation": true|false,
+    "violatedCodes": ["CODE_ID"],
+    "violationSeverity": "none|tension|single_violation|multi_violation",
+    "violationDetails": "explanation"
+  },
+  "conflictAnalysis": {
+    "primaryTensions": ["..."],
+    "professionalCodeImplications": { "CODE_ID": "..." }
+  },
+  "analyticalObservations": ["...", "...", "..."],
+  "questionsForReflection": ["...", "...", "..."],
+  "warningFlags": ["..."]
+}</div>
+
+<!-- ══════════════ Q2: CODE COMPLIANCE LOGIC ══════════════ -->
+<h2>2. Code Compliance Logic Location &amp; Determinism Confirmation</h2>
+
+<h3>Location</h3>
+<p>The professional code compliance mapping is implemented in the <code>applyGuardrails()</code> function within <code>supabase/functions/analyze-case/index.ts</code>, lines 134&ndash;160.</p>
+
+<h3>Deterministic Mapping (Literal Code)</h3>
+<div class="code-block"><span class="code-label">applyGuardrails() — Code Compliance Score (lines 134-160)</span>
+let codeScore: number;
+if (violationSeverity === "multi_violation"
+    || (hasViolation &amp;&amp; flagsIndicateViolation)) {
+  const violatedCodes = (violationDetection.violatedCodes as string[]) || [];
+  if (violatedCodes.length >= 2
+      || violationSeverity === "multi_violation") {
+    codeScore = 1;    // multi-code violation
+  } else {
+    codeScore = 3;    // single violation with flag
+  }
+} else if (violationSeverity === "single_violation" || hasViolation) {
+  codeScore = 3;      // single violation
+} else if (violationSeverity === "tension") {
+  codeScore = 6;      // tension only
+} else {
+  codeScore = 9;      // no violations
+}</div>
+
+<h3>Confirmation Checklist</h3>
+<table>
+  <tr><th style="width:55%">Requirement</th><th>Status</th></tr>
+  <tr>
+    <td>Mapping is deterministic (multi=1, single=3, tension=6, none=9)</td>
+    <td><strong>CONFIRMED</strong> &mdash; Pure if/else chain in <code>applyGuardrails()</code>. No AI involvement. The AI provides <code>violationSeverity</code> and <code>violatedCodes</code>; the guardrails function maps these to fixed integer scores using hardcoded logic.</td>
+  </tr>
+  <tr>
+    <td>Violation cap (&le; 4.9) is applied post-composite calculation</td>
+    <td><strong>CONFIRMED</strong> &mdash; Lines 166&ndash;168: composite is computed first (<code>lensComponent + codeComponent</code>), then capped: <code>if (anyViolation) { finalScore = Math.min(finalScore, 4.9); }</code></td>
+  </tr>
+  <tr>
+    <td>AI cannot override the deterministic mapping</td>
+    <td><strong>CONFIRMED</strong> &mdash; AI output is consumed as read-only input. <code>applyGuardrails()</code> extracts fields from the AI JSON and applies its own logic. AI is explicitly told &ldquo;Do NOT classify ethical stability &mdash; that is computed deterministically by a post-processing guardrails layer.&rdquo;</td>
+  </tr>
+</table>
+
+<!-- VIOLATION CAP CODE -->
+<div class="code-block"><span class="code-label">Violation Cap — Post-Composite (lines 163-168)</span>
+// 4. Compute components
+const lensComponent = lensAverage * 0.30;
+const codeComponent = codeScore * 0.70;
+let finalScore = Math.round((lensComponent + codeComponent) * 10) / 10;
+
+// 5. Cap rule: if any violation, final composite &le; 4.9
+if (anyViolation) {
+  finalScore = Math.min(finalScore, 4.9);
+}</div>
+
+<!-- ══════════════ Q3: ORDER OF OPERATIONS ══════════════ -->
+<h2>3. Order of Operations Confirmation</h2>
+
+<h3>Processing Sequence Diagram</h3>
+<div class="diagram">
+  <div class="flow">
+    <div class="flow-box"><div class="label">Step 1</div><div class="sub">AI Scoring</div></div>
+    <div style="text-align:center"><div class="flow-arrow">&rarr;</div></div>
+    <div class="flow-box"><div class="label">Step 2</div><div class="sub">Guardrails<br>Validation &amp;<br>Clamping</div></div>
+    <div style="text-align:center"><div class="flow-arrow">&rarr;</div></div>
+    <div class="flow-box"><div class="label">Step 3</div><div class="sub">70/30<br>Composite</div></div>
+    <div style="text-align:center"><div class="flow-arrow">&rarr;</div></div>
+    <div class="flow-box"><div class="label">Step 4</div><div class="sub">Violation<br>Cap (&le;4.9)</div></div>
+    <div style="text-align:center"><div class="flow-arrow">&rarr;</div></div>
+    <div class="flow-box"><div class="label">Step 5</div><div class="sub">Stability<br>Classification</div></div>
+  </div>
+</div>
+
+<h3>Detailed Trace (with source line references)</h3>
+<table>
+  <tr><th style="width:8%">Step</th><th style="width:26%">Operation</th><th style="width:12%">Lines</th><th>Detail</th></tr>
+  <tr>
+    <td>1</td>
+    <td>AI Scoring</td>
+    <td>215&ndash;245</td>
+    <td>Gemini API called with SYSTEM_PROMPT + USER_PROMPT_TEMPLATE. Returns JSON with <code>lensAnalysis</code> (6 lens objects, each with <code>score</code> + <code>reasoning</code>), <code>violationDetection</code>, <code>conflictAnalysis</code>, <code>analyticalObservations</code>, <code>questionsForReflection</code>, <code>warningFlags</code>.</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>Guardrails Validation &amp; Clamping</td>
+    <td>117&ndash;128</td>
+    <td><code>clampScore()</code> applied to each AI lens score: <code>Math.max(1, Math.min(10, Math.round(n)))</code>. Non-numeric values default to 5. Reasoning passed through unchanged.</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>70/30 Composite Calculation</td>
+    <td>130&ndash;166</td>
+    <td>Lens Average = mean(6 clamped scores). <code>lensComponent = lensAverage * 0.30</code>. <code>codeComponent = codeScore * 0.70</code>. <code>finalScore = lensComponent + codeComponent</code>.</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>Violation Cap</td>
+    <td>167&ndash;169</td>
+    <td><code>if (anyViolation) finalScore = Math.min(finalScore, 4.9)</code>. Applied AFTER composite calculation. Cannot be bypassed.</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>Stability Classification</td>
+    <td>171&ndash;189</td>
+    <td>Deterministic classification based on violation status and lens score standard deviation:<br>&bull; Violation &rarr; <strong>Ethically Unstable</strong> (conflict=3)<br>&bull; stdDev &gt; 2.5 or tension &rarr; <strong>Contested</strong> (conflict=2)<br>&bull; Otherwise &rarr; <strong>Stable</strong> (conflict=1)<br>Multi-code violation override: violatedCodes.length &ge; 2 forces Ethically Unstable.</td>
+  </tr>
+</table>
+
+<div class="check-row"><span class="check-mark">&#10003;</span><span class="check-text"><strong>Confirmed:</strong> The sequence is AI scoring &rarr; Guardrails validation/clamping &rarr; 70/30 composite &rarr; Violation cap &rarr; Stability classification. This is enforced by the linear execution order within <code>applyGuardrails()</code>, which is called exactly once per request after the AI response is parsed (line 254).</span></div>
+
+<!-- ══════════════ Q4: SAMPLE RAW JSON ══════════════ -->
+<h2>4. Sample Raw JSON Output</h2>
+
+<div class="note-box">
+  <strong>LIVE DATA</strong> &mdash; Captured February 26, 2026 via Gemini 2.5 Flash using the identical system prompt and guardrails logic deployed in the edge function. Test case: <strong>Case 2 &mdash; Suppressed Exposure Data</strong>.
+</div>
+
+<div class="json-block">{
+  "lensScores": {
+    "utilitarian": {
+      "score": 3,
+      "reasoning": "The action of omitting data prioritizes avoiding immediate 'unnecessary alarm' for management and potentially employees, a short-term perceived benefit. However, it exposes workers to unknown risks above internal guidelines, potentially leading to long-term health harms for many individuals, which represents a significant negative impact in terms of severity and duration compared to the minor benefit of avoiding alarm."
+    },
+    "duty": {
+      "score": 1,
+      "reasoning": "The industrial hygienist's compliance with management's instruction directly conflicts with professional duties requiring truthful disclosure and accurate reporting of findings. This action constitutes deception, preventing workers from exercising informed consent regarding their workplace environment and failing to respect their autonomy and dignity."
+    },
+    "justice": {
+      "score": 2,
+      "reasoning": "The suppression of data denies workers fair access to information about potential hazards in their workplace, which limits their ability to seek protections or advocate for safer conditions. This lack of procedural transparency creates an inequitable distribution of information and power, undermining the principle of equal treatment for all similarly situated parties regarding safety information."
+    },
+    "virtue": {
+      "score": 2,
+      "reasoning": "The hygienist's compliance demonstrates a lack of integrity under pressure and an absence of moral courage in upholding professional standards against a management directive. This action indicates a deviation from the expected consistency of character for a safety professional committed to honesty and accountability in protecting worker well-being."
+    },
+    "care": {
+      "score": 2,
+      "reasoning": "The action fails to protect vulnerable workers who rely on the industrial hygienist for accurate information regarding their health and safety. By concealing data that could affect worker well-being, the situation demonstrates a lack of responsiveness to harm concerns and a failure to recognize the relational responsibility to inform those potentially at risk."
+    },
+    "commonGood": {
+      "score": 2,
+      "reasoning": "The suppression of data erodes institutional trust within the company, as workers cannot rely on safety professionals or management for transparent hazard information. If discovered, this action could damage public confidence in the company's commitment to safety and potentially lead to negative long-term impacts on its reputation and sustainability beyond individual interests."
+    }
+  },
+  "compositeScore": 1.3,
+  "ethicalStability": "Ethically Unstable",
+  "conflictLevel": 3,
+  "conflictAnalysis": {
+    "primaryTensions": [
+      "The industrial hygienist's professional duty to truthfully report findings versus management's directive to suppress data.",
+      "The prioritization of short-term organizational comfort (avoiding 'unnecessary alarm') versus the long-term health and safety of workers.",
+      "The ethical imperative for transparency and worker autonomy versus the employer's perceived need for control over information dissemination."
+    ],
+    "professionalCodeImplications": {
+      "AIHA/ABIH": "The IH's actions directly conflict with the core tenets of practicing with integrity and competence, and reporting findings accurately and without bias. The decision to omit data under management pressure undermines the principle of prioritizing worker health and safety above employer demands, which is fundamental to the industrial hygiene profession.",
+      "BCSP/ASSP": "The scenario illustrates a clear failure to uphold the paramount duty to the safety, health, and welfare of the public (which includes workers). By complying with the instruction to omit data, the IH did not maintain objectivity and truthfulness in a professional report, thereby eroding the trust placed in certified safety professionals."
+    }
+  },
+  "analyticalObservations": [
+    "The case highlights a direct conflict between a safety professional's ethical obligations and a directive from senior management.",
+    "The distinction between internal safety guidelines and regulatory limits is a critical factor, creating an ethical dilemma where legal compliance does not equate to ethical transparency or full disclosure.",
+    "The decision to suppress information prioritizes avoiding perceived 'unnecessary alarm' over providing workers with complete information relevant to their potential health risks and autonomy."
+  ],
+  "questionsForReflection": [
+    "What are the long-term implications for worker trust and the safety culture when data exceeding internal guidelines, but below regulatory limits, is suppressed?",
+    "How might the industrial hygienist have navigated the management instruction while upholding their professional ethical obligations without immediate compliance?",
+    "What is the ethical responsibility of senior management in situations where internal safety guidelines are exceeded, even if regulatory limits are not, and how does this impact their duty of care?"
+  ],
+  "warningFlags": [
+    "Suppression of safety-critical information from affected stakeholders.",
+    "Direct conflict between management directives and professional ethical codes.",
+    "Prioritization of organizational comfort or reputation over worker well-being and right-to-know.",
+    "Professional code violation detected — composite score capped at 4.9."
+  ],
+  "violationDetection": {
+    "hasViolation": true,
+    "violatedCodes": ["AIHA/ABIH", "BCSP/ASSP"],
+    "violationSeverity": "multi_violation",
+    "violationDetails": "The industrial hygienist violated multiple professional codes by omitting exposure data from a report under management instruction. This directly contradicts AIHA/ABIH's requirements to report findings accurately and without bias, and to prioritize worker health and safety above employer demands. Similarly, it violates BCSP/ASSP's mandate to hold paramount the safety, health, and welfare of the public, and to be objective and truthful in professional reports."
+  },
+  "_internal": {
+    "lensAverage": 2,
+    "codeScore": 1,
+    "lensComponent": 0.6,
+    "codeComponent": 0.7,
+    "lensStdDev": 0.58,
+    "weightingFormula": "70% professional code compliance + 30% ethical lens average"
+  },
+  "_guardrailsApplied": true,
+  "_algorithmVersion": "2.1"
+}</div>
+
+<h3>Output Field Verification</h3>
+<table>
+  <tr><th style="width:28%">Field</th><th style="width:14%">Source</th><th>Description</th></tr>
+  <tr><td><code>lensScores</code></td><td>AI + Guardrails</td><td>6 lens objects. Scores clamped by <code>clampScore()</code>. Reasoning from AI passed through verbatim.</td></tr>
+  <tr><td><code>compositeScore</code></td><td>Guardrails</td><td>Deterministic: <code>(lensAvg * 0.30) + (codeScore * 0.70)</code>, capped at 4.9 if violation.</td></tr>
+  <tr><td><code>ethicalStability</code></td><td>Guardrails</td><td>Deterministic: Stable / Contested / Ethically Unstable based on violations and std deviation.</td></tr>
+  <tr><td><code>conflictLevel</code></td><td>Guardrails</td><td>Deterministic: 1 (Stable), 2 (Contested), 3 (Ethically Unstable).</td></tr>
+  <tr><td><code>conflictAnalysis</code></td><td>AI</td><td>Passed through from AI. Contains tensions and code implications.</td></tr>
+  <tr><td><code>analyticalObservations</code></td><td>AI</td><td>Passed through from AI.</td></tr>
+  <tr><td><code>questionsForReflection</code></td><td>AI</td><td>Passed through from AI. Non-prescriptive.</td></tr>
+  <tr><td><code>warningFlags</code></td><td>AI + Guardrails</td><td>AI flags passed through; guardrails append violation cap warning if needed.</td></tr>
+  <tr><td><code>violationDetection</code></td><td>AI</td><td>Passed through from AI. Consumed by guardrails for <code>codeScore</code> mapping.</td></tr>
+  <tr><td><code>_internal</code></td><td>Guardrails</td><td>Research metadata: lens average, code score, components, std dev, formula. Not displayed in UI.</td></tr>
+  <tr><td><code>_guardrailsApplied</code></td><td>Guardrails</td><td>Boolean flag confirming guardrails executed.</td></tr>
+  <tr><td><code>_algorithmVersion</code></td><td>Guardrails</td><td>Current version: "2.1".</td></tr>
+</table>
+
+<!-- ══════════════ SUMMARY ══════════════ -->
+<h2>Summary of Governance Confirmations</h2>
+<table>
+  <tr><th style="width:8%">#</th><th style="width:38%">Item</th><th>Status</th></tr>
+  <tr><td>1</td><td>Full system prompt (canonical definitions, criteria, JSON schema, scoring instructions)</td><td><strong>PROVIDED</strong> &mdash; Verbatim text included above</td></tr>
+  <tr><td>2</td><td>Code compliance mapping is deterministic; violation cap applied post-composite</td><td><strong>CONFIRMED</strong> &mdash; Hardcoded if/else (multi=1, single=3, tension=6, none=9); cap at line 168</td></tr>
+  <tr><td>3</td><td>Order: AI &rarr; Clamp &rarr; 70/30 &rarr; Cap &rarr; Stability</td><td><strong>CONFIRMED</strong> &mdash; Linear execution in applyGuardrails(), called once per request</td></tr>
+  <tr><td>4</td><td>Sample raw JSON output</td><td><strong>PROVIDED</strong> &mdash; Live capture from Gemini 2.5 Flash, Feb 26 2026</td></tr>
+</table>
+
+
+
+<p style="margin-top:14px;"><strong>MILESTONE 2 GOVERNANCE VERIFICATION COMPLETE.</strong> Ready for release approval and progression to Milestone 3.</p>
+
+<div class="sign-off">
+  <p><strong>Reliy Dev Team</strong></p>
+  <p style="color:#555; font-size:9pt;">February 26, 2026</p>
+</div>
+
+<div class="footer">Ethical Insight Pro &mdash; Confidential</div>
+
+</div>
+</body>
+</html>

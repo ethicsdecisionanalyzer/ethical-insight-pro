@@ -197,7 +197,7 @@ const Results = () => {
             <RecommendationsSection analysis={analysis} />
 
             {/* Footer actions */}
-            <ResultsFooterActions />
+            <ResultsFooterActions caseId={caseId!} />
           </div>
         </div>
       </main>

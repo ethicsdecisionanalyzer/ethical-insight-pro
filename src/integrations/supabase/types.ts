@@ -44,6 +44,50 @@ export type Database = {
         }
         Relationships: []
       }
+      case_pdf_exports: {
+        Row: {
+          id: string
+          case_submission_id: string
+          user_id: string
+          storage_path: string
+          file_size_bytes: number
+          sha256: string
+          generation_status: string
+          error_message: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          case_submission_id: string
+          user_id: string
+          storage_path: string
+          file_size_bytes?: number
+          sha256?: string
+          generation_status?: string
+          error_message?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          case_submission_id?: string
+          user_id?: string
+          storage_path?: string
+          file_size_bytes?: number
+          sha256?: string
+          generation_status?: string
+          error_message?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_pdf_exports_case_submission_id_fkey"
+            columns: ["case_submission_id"]
+            isOneToOne: false
+            referencedRelation: "case_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_submissions: {
         Row: {
           access_code_used: string
@@ -101,18 +145,21 @@ export type Database = {
           created_at: string
           id: string
           session_id: string
+          user_id: string | null
         }
         Insert: {
           code_id: string
           created_at?: string
           id?: string
           session_id: string
+          user_id?: string | null
         }
         Update: {
           code_id?: string
           created_at?: string
           id?: string
           session_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {

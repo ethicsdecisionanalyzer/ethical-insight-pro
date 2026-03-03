@@ -13,6 +13,8 @@ import {
   Trash2,
   ToggleLeft,
   ToggleRight,
+  Key,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,8 +31,14 @@ import {
   deleteVerificationQuestion,
   getAllProfiles,
   updateUserProfile,
+  getAccessCodes,
+  toggleAccessCode,
+  resetAccessCodeUsage,
+  getCodeRedemptionLogs,
   VerificationQuestion,
   UserProfile,
+  AccessCodeRow,
+  CodeRedemptionLog,
 } from "@/services/database";
 import {
   Dialog,
@@ -67,6 +75,8 @@ const Admin = () => {
   const [questions, setQuestions] = useState<VerificationQuestion[]>([]);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [submissions, setSubmissions] = useState<CaseSubmission[]>([]);
+  const [accessCodes, setAccessCodes] = useState<AccessCodeRow[]>([]);
+  const [redemptionLogs, setRedemptionLogs] = useState<CodeRedemptionLog[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Stats
@@ -129,20 +139,26 @@ const Admin = () => {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    try {
-      const [questionsData, profilesData, submissionsData, statsData] = await Promise.all([
-        getVerificationQuestions(),
-        getAllProfiles(),
-        getRecentSubmissions(),
-        getAdminStats(),
-      ]);
-      setQuestions(questionsData);
-      setProfiles(profilesData);
-      setSubmissions(submissionsData);
-      setStats(statsData);
-    } catch (err) {
-      console.error("Failed to load data:", err);
-      toast({ title: "Error", description: "Failed to load dashboard data.", variant: "destructive" });
+    const results = await Promise.allSettled([
+      getVerificationQuestions(),
+      getAllProfiles(),
+      getRecentSubmissions(),
+      getAdminStats(),
+      getAccessCodes(),
+      getCodeRedemptionLogs(),
+    ]);
+    if (results[0].status === "fulfilled") setQuestions(results[0].value);
+    if (results[1].status === "fulfilled") setProfiles(results[1].value);
+    if (results[2].status === "fulfilled") setSubmissions(results[2].value);
+    if (results[3].status === "fulfilled") setStats(results[3].value);
+    if (results[4].status === "fulfilled") setAccessCodes(results[4].value);
+    if (results[5].status === "fulfilled") setRedemptionLogs(results[5].value);
+    const failures = results.filter((r) => r.status === "rejected");
+    if (failures.length > 0) {
+      failures.forEach((f) => console.error("Dashboard load error:", (f as PromiseRejectedResult).reason));
+      if (failures.length === results.length) {
+        toast({ title: "Error", description: "Failed to load dashboard data.", variant: "destructive" });
+      }
     }
     setLoading(false);
   }, []);
@@ -207,6 +223,27 @@ const Admin = () => {
     }
     setShowDeleteDialog(false);
     setDeletingQuestion(null);
+  };
+
+  // Access code management
+  const handleToggleCode = async (code: AccessCodeRow) => {
+    try {
+      await toggleAccessCode(code.id, !code.active);
+      await loadData();
+      toast({ title: "Updated", description: `Code ${code.active ? "deactivated" : "activated"}.` });
+    } catch {
+      toast({ title: "Error", description: "Failed to toggle access code.", variant: "destructive" });
+    }
+  };
+
+  const handleResetCodeUsage = async (code: AccessCodeRow) => {
+    try {
+      await resetAccessCodeUsage(code.id);
+      await loadData();
+      toast({ title: "Reset", description: `Usage count reset for ${code.code}.` });
+    } catch {
+      toast({ title: "Error", description: "Failed to reset code usage.", variant: "destructive" });
+    }
   };
 
   // User management
@@ -343,6 +380,8 @@ const Admin = () => {
                   <TabsTrigger value="questions">Verification Questions</TabsTrigger>
                   <TabsTrigger value="users">Users</TabsTrigger>
                   <TabsTrigger value="submissions">Submissions</TabsTrigger>
+                  <TabsTrigger value="codes">Access Codes</TabsTrigger>
+                  <TabsTrigger value="logs">Usage Logs</TabsTrigger>
                 </TabsList>
 
                 {/* Verification Questions Tab */}
@@ -521,6 +560,111 @@ const Admin = () => {
                     </div>
                   </div>
                 </TabsContent>
+                {/* Access Codes Tab */}
+                <TabsContent value="codes">
+                  <div className="card-professional p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                        <Key className="w-5 h-5" />
+                        Access Codes
+                      </h2>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Code</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Usage</TableHead>
+                            <TableHead>Remaining</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {accessCodes.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                No access codes found.
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            accessCodes.map((code) => (
+                              <TableRow key={code.id} className={!code.active ? "opacity-50" : ""}>
+                                <TableCell className="font-mono text-sm">{code.code}</TableCell>
+                                <TableCell>
+                                  {code.active ? (
+                                    <span className="badge-success">Active</span>
+                                  ) : (
+                                    <span className="badge-neutral">Inactive</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>{code.uses_count} / {code.max_uses}</TableCell>
+                                <TableCell>{Math.max(0, code.max_uses - code.uses_count)}</TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {new Date(code.created_at).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-1">
+                                    <Button variant="ghost" size="sm" onClick={() => handleToggleCode(code)} title={code.active ? "Deactivate" : "Activate"}>
+                                      {code.active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleResetCodeUsage(code)} title="Reset usage">
+                                      <RotateCcw className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Usage Logs Tab */}
+                <TabsContent value="logs">
+                  <div className="card-professional p-6">
+                    <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Clock className="w-5 h-5" />
+                      Code Redemption Logs
+                    </h2>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Timestamp</TableHead>
+                            <TableHead>Code</TableHead>
+                            <TableHead>Session</TableHead>
+                            <TableHead>User ID</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {redemptionLogs.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                No redemption logs yet.
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            redemptionLogs.map((log) => (
+                              <TableRow key={log.id}>
+                                <TableCell className="text-muted-foreground">
+                                  {new Date(log.created_at).toLocaleString()}
+                                </TableCell>
+                                <TableCell className="font-mono text-sm">{log.code}</TableCell>
+                                <TableCell className="font-mono text-sm text-muted-foreground">{log.session_id}</TableCell>
+                                <TableCell className="font-mono text-xs text-muted-foreground">{log.user_id || "N/A"}</TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </TabsContent>
+
               </Tabs>
             </>
           )}

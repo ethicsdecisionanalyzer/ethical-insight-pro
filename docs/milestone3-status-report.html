@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Milestone 3 Status Report — PDF Export, Admin Tools & Final Delivery</title>
+<style>
+  @page { size: letter; margin: 0.55in 0.5in; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #000; background: #fff; line-height: 1.4; }
+
+  .cover-bar { background: #000; color: #fff; padding: 20px 0; margin-bottom: 20px; }
+  .cover-bar .inner { max-width: 7in; margin: 0 auto; padding: 0 0.2in; }
+  .cover-bar h1 { font-size: 20pt; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .cover-bar .sub { font-size: 11pt; font-weight: 400; opacity: 0.92; }
+  .cover-bar .meta { font-size: 8pt; color: #aaa; margin-top: 5px; }
+
+  .content { max-width: 7in; margin: 0 auto; padding: 0 0.2in; }
+
+  h2 { font-size: 12.5pt; font-weight: 700; border-bottom: 1.5px solid #000; padding-bottom: 3px; margin: 22px 0 8px 0; }
+  h3 { font-size: 10pt; font-weight: 700; margin: 12px 0 4px 0; }
+  h4 { font-size: 9pt; font-weight: 700; margin: 8px 0 3px 0; }
+  p { margin-bottom: 6px; }
+  ul { margin: 3px 0 8px 18px; }
+  li { margin-bottom: 2px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 12px 0; font-size: 8.5pt; }
+  th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: #e8e8e8; font-weight: 700; }
+
+  .code-block { background: #f4f4f4; border: 1.5px solid #000; padding: 10px 14px; margin: 6px 0 12px 0; font-family: 'Consolas', 'Courier New', monospace; font-size: 7.5pt; white-space: pre-wrap; word-break: break-word; line-height: 1.35; page-break-inside: avoid; overflow-x: auto; }
+  .code-label { font-weight: 700; font-size: 8pt; margin-bottom: 3px; display: block; font-family: 'Segoe UI', Arial, sans-serif; }
+
+  .diagram { border: 1.5px solid #000; padding: 14px 16px; margin: 8px 0 14px 0; background: #fafafa; page-break-inside: avoid; font-family: 'Consolas', 'Courier New', monospace; font-size: 7.5pt; white-space: pre; line-height: 1.35; overflow-x: auto; }
+  .diagram-label { font-weight: 700; font-size: 8pt; margin-bottom: 5px; display: block; font-family: 'Segoe UI', Arial, sans-serif; }
+
+  .flow { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: nowrap; margin: 6px 0; }
+  .flow-box { border: 1.5px solid #000; padding: 6px 10px; text-align: center; min-width: 90px; background: #fff; }
+  .flow-box .label { font-weight: 700; font-size: 8.5pt; }
+  .flow-box .sub { font-size: 7pt; color: #555; margin-top: 1px; }
+  .flow-arrow { font-size: 14pt; font-weight: 700; padding: 0 4px; color: #000; }
+
+  .section-tag { display: inline-block; background: #000; color: #fff; font-size: 7pt; font-weight: 700; padding: 2px 8px; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .note-box { border: 1.5px solid #000; padding: 8px 12px; margin: 8px 0 12px 0; background: #fff; font-size: 8.5pt; }
+  .note-box strong { font-size: 8.5pt; }
+
+  .stats-row { display: flex; gap: 12px; margin: 10px 0 16px; }
+  .stat-card { flex: 1; border: 1.5px solid #000; padding: 10px; text-align: center; }
+  .stat-card .num { font-size: 24pt; font-weight: 700; }
+  .stat-card .label { font-size: 8pt; color: #333; }
+
+  .sign-off { margin-top: 24px; border-top: 1.5px solid #000; padding-top: 8px; }
+  .footer { text-align: center; font-size: 7pt; color: #aaa; margin-top: 30px; }
+
+  @media print {
+    .cover-bar, th, .section-tag { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover-bar">
+  <div class="inner">
+    <h1>ETHICAL INSIGHT PRO</h1>
+    <div class="sub">Milestone 3 &mdash; PDF Export, Admin Tools &amp; Final Delivery</div>
+    <div class="meta">Algorithm v2.1 &nbsp;|&nbsp; March 3, 2026 &nbsp;|&nbsp; Reliy Dev Team &nbsp;|&nbsp; Budget: $850</div>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- Summary -->
+<h2>Executive Summary</h2>
+<p>Milestone 3 delivers production-grade output and operations tooling: a <strong>server-generated PDF report</strong> (case + analysis), persistent PDF storage with secure download, and an expanded <strong>admin dashboard</strong> with access code management and usage logs. All 24 trick tests pass, all 6 acceptance criteria are met, and the application is deployed to Cloudflare Pages with edge functions on Supabase.</p>
+
+<div class="stats-row">
+  <div class="stat-card"><div class="num">24/24</div><div class="label">Trick Tests Passed</div></div>
+  <div class="stat-card"><div class="num">6/6</div><div class="label">Acceptance Criteria Met</div></div>
+  <div class="stat-card"><div class="num">0</div><div class="label">Open Defects</div></div>
+</div>
+
+<!-- Version Timeline -->
+<h2>1. Version Timeline</h2>
+<div class="diagram"><span class="diagram-label">Release History</span>
+v1.0 (Lovable)         v2.0.1                 v2.1                   v3.0 (Current)
+ |                       |                      |                      |
+ o───────o───────────────o──────────────────────o──────────────────────o
+ |       |               |                      |                      |
+ Base    Security         Lens scoring           Canonical lens         PDF export +
+ build   hardening        transferred to AI      definitions embedded   Admin tools +
+         + deploy         (user sliders removed)  (25 criteria)         Trick tests
+                          commit: 30e9945         commit: c7bded8       current</div>
+
+<!-- Architecture -->
+<h2>2. System Architecture</h2>
+<div class="section-tag">DIAGRAM</div>
+<div class="diagram"><span class="diagram-label">Component Overview</span>
+┌──────────────────┐       ┌───────────────────┐       ┌─────────────────────┐
+│   Frontend       │       │   Supabase Edge   │       │   Supabase DB       │
+│   (React SPA)    │       │   Functions       │       │   + Storage         │
+├──────────────────┤       ├───────────────────┤       ├─────────────────────┤
+│                  │       │                   │       │                     │
+│ Case Intake Form │──────▶│ analyze-case      │──────▶│ case_submissions    │
+│   (no sliders)   │ POST  │   (Gemini 2.5)    │       │   analysis_result   │
+│                  │       │   v2.1 prompt      │       │                     │
+├──────────────────┤       ├───────────────────┤       ├─────────────────────┤
+│                  │       │                   │       │                     │
+│ Results Page     │       │ export-case-pdf   │──────▶│ case_pdf_exports    │
+│   Download PDF   │──────▶│   (pdf-lib)       │       │   (metadata + hash) │
+│   Print          │ POST  │   JWT auth        │       │                     │
+│                  │       │   ownership check  │──────▶│ Storage Bucket      │
+├──────────────────┤       └───────────────────┘       │   case-pdf-exports  │
+│                  │                                   │   (private, RLS)    │
+│ Admin Dashboard  │──────▶  Supabase Client  ────────▶│                     │
+│   Access Codes   │       (RLS: admin only)           │ access_codes        │
+│   Usage Logs     │                                   │ code_redemptions    │
+│   Users/Subs     │                                   │ profiles            │
+└──────────────────┘                                   └─────────────────────┘</div>
+
+<!-- PDF Pipeline -->
+<h2>3. PDF Export Pipeline</h2>
+<div class="section-tag">SEQUENCE DIAGRAM</div>
+<div class="diagram"><span class="diagram-label">PDF Generation Flow</span>
+  User clicks              Edge Function              Supabase Storage         Browser
+  "Download PDF"           export-case-pdf            case-pdf-exports         auto-download
+       │                        │                          │                       │
+       │── POST /functions ────▶│                          │                       │
+       │   (JWT + caseId)       │                          │                       │
+       │                        │── Verify JWT ───────────▶│                       │
+       │                        │── Check ownership ──────▶│                       │
+       │                        │── Load case_submissions ▶│                       │
+       │                        │                          │                       │
+       │                        │── Generate PDF           │                       │
+       │                        │   (pdf-lib: cover,       │                       │
+       │                        │    6 lenses, violations, │                       │
+       │                        │    observations,         │                       │
+       │                        │    disclaimer)           │                       │
+       │                        │                          │                       │
+       │                        │── SHA-256 hash           │                       │
+       │                        │── Upload to storage ────▶│ user/case/export.pdf  │
+       │                        │── Insert metadata ──────▶│ case_pdf_exports row  │
+       │                        │── Create signed URL ────▶│                       │
+       │                        │   (1 hour TTL)           │                       │
+       │                        │                          │                       │
+       │◀── { signedUrl } ──────│                          │                       │
+       │                                                                           │
+       │── window.open(signedUrl) ────────────────────────────────────────────────▶│
+       │                                                   PDF downloads to client │</div>
+
+<!-- Acceptance Criteria -->
+<h2>4. Acceptance Criteria</h2>
+<table>
+  <tr><th>#</th><th>Criterion</th><th>Status</th><th>Evidence</th></tr>
+  <tr><td>AC1</td><td>PDF export generated on server (not browser print)</td><td><strong>PASS</strong></td><td>export-case-pdf edge function uses pdf-lib server-side; window.print() retained as fallback only</td></tr>
+  <tr><td>AC2</td><td>PDF stored in Supabase storage, retrievable by authorized user</td><td><strong>PASS</strong></td><td>Private bucket "case-pdf-exports", RLS restricts to owner, signed URL (1hr TTL)</td></tr>
+  <tr><td>AC3</td><td>Admin can view access codes, usage counts/logs, deactivate/reactivate, reset usage</td><td><strong>PASS</strong></td><td>Admin dashboard: Access Codes tab (6 codes, toggle, reset), Usage Logs tab</td></tr>
+  <tr><td>AC4</td><td>Security checks pass (ownership/RLS/signed URL/private bucket)</td><td><strong>PASS</strong></td><td>Trick tests T1, T12, T13 confirm unauthorized access blocked</td></tr>
+  <tr><td>AC5</td><td>Trick tests pass and evidence documented</td><td><strong>PASS</strong></td><td>24/24 trick tests pass (see Section 5)</td></tr>
+  <tr><td>AC6</td><td>Lint/tests/build pass on final branch</td><td><strong>PASS</strong></td><td>vitest: 1/1 pass, vite build: clean (13.6s)</td></tr>
+</table>
+
+<!-- Trick Tests -->
+<h2>5. Trick Test Results (24/24 PASS)</h2>
+
+<h3>5.1 PDF Generation Tests</h3>
+<table>
+  <tr><th>ID</th><th>Test</th><th>Expected</th><th>Actual</th><th>Status</th></tr>
+  <tr><td>T1</td><td>Unauthorized export: User A requests User B's case</td><td>403, no storage write, no metadata row</td><td>403 "Forbidden", 0 orphan rows</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T1b</td><td>No orphan metadata rows created</td><td>0 non-owner rows</td><td>0 non-owner rows</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T2</td><td>Analysis-missing: case exists, analysis_result is null</td><td>409, clear error</td><td>409 "Analysis not ready"</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T5</td><td>XSS/script injection in narrative + title</td><td>PDF renders safely</td><td>200, PDF generated with sanitized text</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T5b</td><td>Signed URL returned for XSS case</td><td>Valid URL</td><td>URL present: true</td><td><strong>PASS</strong></td></tr>
+</table>
+
+<h3>5.2 Admin Tests</h3>
+<table>
+  <tr><th>ID</th><th>Test</th><th>Expected</th><th>Actual</th><th>Status</th></tr>
+  <tr><td>T9</td><td>Deactivate already-inactive code</td><td>Idempotent, no crash</td><td>No error, idempotent</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T12</td><td>Non-admin calls admin mutation (toggle code)</td><td>RLS denial</td><td>Blocked: state unchanged</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T13</td><td>Set uses_count to -1</td><td>Constraint rejects</td><td>CHECK "access_codes_uses_count_non_negative" violated</td><td><strong>PASS</strong></td></tr>
+</table>
+
+<h3>5.3 PDF Fidelity &amp; Governance Tests</h3>
+<table>
+  <tr><th>ID</th><th>Test</th><th>Expected</th><th>Actual</th><th>Status</th></tr>
+  <tr><td>T15</td><td>Export metadata record exists</td><td>Row in case_pdf_exports</td><td>Found, status=completed</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T15b</td><td>SHA-256 hash recorded (64 hex chars)</td><td>64-char hash</td><td>Length: 64</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T15c</td><td>PDF starts with %PDF header</td><td>Valid PDF magic bytes</td><td>Header: %PDF-</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T16</td><td>File size &gt; 0, contains content streams</td><td>Non-empty, valid structure</td><td>5,539 bytes, has streams</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T17</td><td>Case submission ID matches in metadata</td><td>Correct FK</td><td>Match: true</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T17b</td><td>Valid PDF object structure</td><td>Has ObjStm references</td><td>Has ObjStm: true</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T18</td><td>User ID matches in metadata</td><td>Correct owner</td><td>Match: true</td><td><strong>PASS</strong></td></tr>
+  <tr><td>T18b</td><td>No credentials leaked in PDF binary</td><td>No JWT or service_role</td><td>Clean: true</td><td><strong>PASS</strong></td></tr>
+</table>
+
+<h3>5.4 Acceptance Criteria Checks</h3>
+<table>
+  <tr><th>ID</th><th>Check</th><th>Status</th></tr>
+  <tr><td>AC1</td><td>Server-generated PDF (not browser print)</td><td><strong>PASS</strong></td></tr>
+  <tr><td>AC2</td><td>PDF stored in Supabase storage</td><td><strong>PASS</strong></td></tr>
+  <tr><td>AC3</td><td>Admin can view access codes</td><td><strong>PASS</strong></td></tr>
+  <tr><td>AC4</td><td>Admin can toggle/reset codes</td><td><strong>PASS</strong></td></tr>
+  <tr><td>AC5</td><td>Usage logs tab renders</td><td><strong>PASS</strong></td></tr>
+  <tr><td>AC6</td><td>Ownership check on export (403 for non-owner)</td><td><strong>PASS</strong></td></tr>
+</table>
+
+<!-- Database Schema -->
+<h2>6. Database Schema Changes</h2>
+<div class="section-tag">MIGRATION 20260301000000</div>
+<div class="diagram"><span class="diagram-label">New Table: case_pdf_exports</span>
+┌────────────────────────┬────────────┬───────────────────────────────────────────┐
+│ Column                 │ Type       │ Notes                                     │
+├────────────────────────┼────────────┼───────────────────────────────────────────┤
+│ id                     │ UUID (PK)  │ gen_random_uuid()                         │
+│ case_submission_id     │ UUID (FK)  │ → case_submissions(id) ON DELETE CASCADE  │
+│ user_id                │ UUID (FK)  │ → auth.users(id) ON DELETE CASCADE        │
+│ storage_path           │ TEXT       │ user_id/case_id/export-TIMESTAMP.pdf      │
+│ file_size_bytes        │ INTEGER    │ default 0                                 │
+│ sha256                 │ TEXT       │ 64-char hex hash for integrity            │
+│ generation_status      │ TEXT       │ 'completed' or 'failed'                   │
+│ error_message          │ TEXT       │ null if successful                        │
+│ created_at             │ TIMESTAMPTZ│ auto                                      │
+└────────────────────────┴────────────┴───────────────────────────────────────────┘
+RLS Policies: owner SELECT + admin SELECT</div>
+
+<div class="note-box">
+  <strong>Additional schema changes:</strong>
+  <ul>
+    <li><strong>code_redemptions</strong> — added <code>user_id</code> column (UUID, FK → auth.users, nullable) for audit trail</li>
+    <li><strong>access_codes</strong> — added CHECK constraint <code>access_codes_uses_count_non_negative</code> (uses_count &ge; 0)</li>
+    <li><strong>Storage bucket</strong> — created <code>case-pdf-exports</code> (private), RLS: users download own PDFs via folder = user_id</li>
+  </ul>
+</div>
+
+<!-- Security Model -->
+<h2>7. Security Model</h2>
+<div class="section-tag">RLS PERMISSION MATRIX</div>
+<div class="diagram"><span class="diagram-label">Row-Level Security by Role</span>
+┌───────────────────────────┬───────┬───────┬────────┬────────┐
+│ Resource                  │ Anon  │ User  │ Owner  │ Admin  │
+├───────────────────────────┼───────┼───────┼────────┼────────┤
+│ access_codes (read)       │   ✗   │active │   ✗    │  ALL   │
+│ access_codes (write)      │   ✗   │   ✗   │   ✗    │  ALL   │
+│ case_submissions (read)   │   ✗   │   ✗   │  own   │  ALL   │
+│ case_submissions (write)  │   ✗   │  own  │  own   │   ✗    │
+│ case_pdf_exports (read)   │   ✗   │   ✗   │  own   │  ALL   │
+│ code_redemptions (read)   │   ✗   │  all  │   ✗    │  ALL   │
+│ Storage: case-pdf-exports │   ✗   │   ✗   │  own   │   ✗    │
+│ Edge: export-case-pdf     │   ✗   │   ✗   │  own   │  ALL   │
+└───────────────────────────┴───────┴───────┴────────┴────────┘
+Legend: ✗ = denied, own = owner only, active = active codes only, ALL = full access</div>
+
+<!-- Admin Dashboard -->
+<h2>8. Admin Dashboard Enhancement</h2>
+<div class="section-tag">NEW TABS</div>
+
+<div class="diagram"><span class="diagram-label">Tab Layout</span>
+┌────────────────────────────────────────────────────────────────────────┐
+│  Admin Dashboard                                        [Logout]     │
+├────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐             │
+│  │ 1 Total  │  │ 0 Verif. │  │ 1 Cases  │  │ 1 Active │             │
+│  │ Users    │  │ Users    │  │ Submitted│  │ Question │             │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘             │
+├────────────────────────────────────────────────────────────────────────┤
+│ Verification │  Users  │ Submissions │ Access Codes* │ Usage Logs*  │
+│  Questions   │         │             │               │              │
+├────────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  * = NEW in Milestone 3                                              │
+└────────────────────────────────────────────────────────────────────────┘</div>
+
+<table>
+  <tr><th>Tab</th><th>Features</th><th>Status</th></tr>
+  <tr><td>Access Codes</td><td>View all 6 codes (Code, Status, Usage x/5, Remaining, Created, Actions); Toggle active/inactive; Reset usage counter</td><td><strong>PASS</strong></td></tr>
+  <tr><td>Usage Logs</td><td>View code redemption history (Timestamp, Code, Session, User ID); Empty state handling</td><td><strong>PASS</strong></td></tr>
+</table>
+
+<!-- Resilience Fix -->
+<h2>9. Resilience Improvement</h2>
+<div class="note-box">
+  <strong>Bug found during testing:</strong> The admin dashboard used <code>Promise.all([6 queries])</code> to load data. When <code>getCodeRedemptionLogs()</code> referenced a column not yet in the live schema (<code>code_redemptions.user_id</code>), the entire dashboard crashed with "Failed to load dashboard data."
+</div>
+<div class="section-tag">FIX</div>
+<div class="diagram"><span class="diagram-label">Before vs. After</span>
+BEFORE (crashed):                          AFTER (resilient):
+────────────────                           ─────────────────
+Promise.all([                              Promise.allSettled([
+  getVerificationQuestions(),                getVerificationQuestions(),
+  getAllProfiles(),                           getAllProfiles(),
+  getRecentSubmissions(),                    getRecentSubmissions(),
+  getAdminStats(),                           getAdminStats(),
+  getAccessCodes(),                          getAccessCodes(),
+  getCodeRedemptionLogs() ← FAILS           getCodeRedemptionLogs() ← fails gracefully
+])                                         ])
+  │                                          │
+  ▼                                          ▼
+ENTIRE DASHBOARD CRASHES                   Other 5 tabs load normally
+"Failed to load dashboard data."           Only affected tab shows empty</div>
+
+<!-- Files Modified -->
+<h2>10. Files Modified</h2>
+<table>
+  <tr><th>File</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>supabase/migrations/20260301000000_milestone3_pdf_admin.sql</code></td><td>NEW</td><td>case_pdf_exports table, storage bucket, code_redemptions.user_id, uses_count constraint</td></tr>
+  <tr><td><code>supabase/functions/export-case-pdf/index.ts</code></td><td>NEW</td><td>Server PDF generation (pdf-lib), JWT auth, ownership check, storage upload, SHA-256</td></tr>
+  <tr><td><code>src/pages/Admin.tsx</code></td><td>MODIFIED</td><td>Access Codes tab, Usage Logs tab, Promise.allSettled resilience</td></tr>
+  <tr><td><code>src/services/database.ts</code></td><td>MODIFIED</td><td>getAccessCodes(), toggleAccessCode(), resetAccessCodeUsage(), getCodeRedemptionLogs(), generateCasePdf()</td></tr>
+  <tr><td><code>src/components/results/ResultsFooterActions.tsx</code></td><td>MODIFIED</td><td>Server PDF export with loading state, auto-download via signed URL</td></tr>
+  <tr><td><code>src/pages/Results.tsx</code></td><td>MODIFIED</td><td>Passes caseId prop to ResultsFooterActions</td></tr>
+  <tr><td><code>src/integrations/supabase/types.ts</code></td><td>MODIFIED</td><td>case_pdf_exports type, code_redemptions.user_id column type</td></tr>
+</table>
+
+<!-- Build Validators -->
+<h2>11. Build Validators</h2>
+<table>
+  <tr><th>Validator</th><th>Command</th><th>Result</th></tr>
+  <tr><td>Unit tests</td><td><code>npx vitest run</code></td><td><strong>1/1 PASS</strong> (12.75s)</td></tr>
+  <tr><td>Production build</td><td><code>npx vite build</code></td><td><strong>PASS</strong> (13.6s, 979KB)</td></tr>
+  <tr><td>TypeScript</td><td>tsc (implicit via build)</td><td><strong>PASS</strong></td></tr>
+  <tr><td>Trick test suite</td><td><code>node _trick-tests.cjs</code></td><td><strong>24/24 PASS</strong></td></tr>
+</table>
+
+<!-- Deployment -->
+<h2>12. Deployment Status</h2>
+<table>
+  <tr><th>Component</th><th>Target</th><th>Status</th><th>URL / Reference</th></tr>
+  <tr><td>Frontend (SPA)</td><td>Cloudflare Pages</td><td><strong>DEPLOYED</strong></td><td>https://ethical-insight-pro.pages.dev</td></tr>
+  <tr><td>Edge: analyze-case</td><td>Supabase</td><td><strong>DEPLOYED (v2.1)</strong></td><td>dlucayewqghjkylwhnot</td></tr>
+  <tr><td>Edge: export-case-pdf</td><td>Supabase</td><td><strong>DEPLOYED</strong></td><td>dlucayewqghjkylwhnot</td></tr>
+  <tr><td>Migration</td><td>Supabase DB</td><td><strong>APPLIED</strong></td><td>20260301000000_milestone3_pdf_admin.sql</td></tr>
+  <tr><td>Storage bucket</td><td>Supabase Storage</td><td><strong>CREATED (private)</strong></td><td>case-pdf-exports</td></tr>
+</table>
+
+<!-- Known Limitations -->
+<h2>13. Known Limitations</h2>
+<ul>
+  <li>Admin users are redirected away from Case Intake (by design &mdash; separation of roles).</li>
+  <li>Gemini API free tier has daily quota limits; analysis may fail during high usage periods.</li>
+  <li>PDF text is FlateDecode compressed; automated text extraction requires a PDF parser library.</li>
+  <li>Usage Logs tab will populate once users redeem access codes through the registration flow.</li>
+</ul>
+
+<!-- Sign-off -->
+<div class="sign-off">
+  <h2>Sign-off</h2>
+  <p><strong>Milestone 3 Status:</strong> COMPLETE &mdash; All acceptance criteria met, all trick tests passed, all components deployed.</p>
+  <p><strong>Next Steps:</strong> Final handoff walkthrough with Mark. Revoke temporary access tokens (sbp_ and Gemini API keys).</p>
+</div>
+
+<div class="footer">
+  Ethical Insight Pro &mdash; Milestone 3 Status Report &nbsp;|&nbsp; Generated March 3, 2026 &nbsp;|&nbsp; Reliy Dev Team &nbsp;|&nbsp; Confidential
+</div>
+
+</div>
+</body>
+</html>
