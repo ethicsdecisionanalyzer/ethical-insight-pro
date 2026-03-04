@@ -261,6 +261,86 @@ export async function getCodeRedemptionLogs(limit = 100): Promise<CodeRedemption
   }));
 }
 
+export interface SummaryMetrics {
+  totalSubmissions: number;
+  stabilityDistribution: { stable: number; contested: number; unstable: number; unanalyzed: number };
+  violationsByCode: Record<string, number>;
+  accessCodeRedemptions: Record<string, number>;
+}
+
+export async function getAllSubmissions(dateFrom?: string, dateTo?: string): Promise<CaseSubmission[]> {
+  let query = supabase
+    .from("case_submissions")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (dateFrom) query = query.gte("created_at", dateFrom);
+  if (dateTo) query = query.lte("created_at", dateTo + "T23:59:59.999Z");
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data || []) as CaseSubmission[];
+}
+
+export function computeSummaryMetrics(submissions: CaseSubmission[], redemptions: CodeRedemptionLog[]): SummaryMetrics {
+  const stabilityDistribution = { stable: 0, contested: 0, unstable: 0, unanalyzed: 0 };
+  const violationsByCode: Record<string, number> = {};
+
+  for (const sub of submissions) {
+    const ar = sub.analysis_result as Record<string, unknown> | null;
+    if (!ar) { stabilityDistribution.unanalyzed++; continue; }
+    const stability = String(ar.ethicalStability || "").toLowerCase();
+    if (stability.includes("stable") && !stability.includes("unstable")) stabilityDistribution.stable++;
+    else if (stability.includes("contested")) stabilityDistribution.contested++;
+    else if (stability.includes("unstable")) stabilityDistribution.unstable++;
+    else stabilityDistribution.unanalyzed++;
+
+    const vd = ar.violationDetection as Record<string, unknown> | undefined;
+    if (vd?.hasViolation) {
+      const codes = Array.isArray(vd.violatedCodes) ? vd.violatedCodes : [];
+      for (const c of codes) { violationsByCode[String(c)] = (violationsByCode[String(c)] || 0) + 1; }
+    }
+  }
+
+  const accessCodeRedemptions: Record<string, number> = {};
+  for (const r of redemptions) {
+    accessCodeRedemptions[r.code] = (accessCodeRedemptions[r.code] || 0) + 1;
+  }
+
+  return { totalSubmissions: submissions.length, stabilityDistribution, violationsByCode, accessCodeRedemptions };
+}
+
+export function submissionsToCsv(submissions: CaseSubmission[]): string {
+  const headers = [
+    "Case ID", "Timestamp", "Title", "Professional Codes",
+    "Utilitarian", "Duty", "Justice", "Virtue", "Care", "Common Good",
+    "Composite Score", "Stability", "Violation", "Violation Severity",
+    "Violated Codes", "Conflict Level", "Algorithm Version",
+  ];
+  const rows = submissions.map((s) => {
+    const ar = s.analysis_result as Record<string, unknown> | null;
+    const ls = (ar?.lensScores || {}) as Record<string, Record<string, unknown>>;
+    const vd = (ar?.violationDetection || {}) as Record<string, unknown>;
+    const score = (key: string) => ls[key]?.score ?? "";
+    return [
+      s.id,
+      s.created_at,
+      `"${(s.title || "").replace(/"/g, '""')}"`,
+      `"${(s.selected_codes || []).join("; ")}"`,
+      score("utilitarian"), score("duty"), score("justice"),
+      score("virtue"), score("care"), score("commonGood"),
+      ar?.compositeScore ?? "",
+      ar?.ethicalStability ?? "",
+      vd.hasViolation ? "Yes" : "No",
+      vd.violationSeverity ?? "none",
+      `"${(Array.isArray(vd.violatedCodes) ? vd.violatedCodes.join("; ") : "")}"`,
+      ar?.conflictLevel ?? "",
+      ar?._algorithmVersion ?? "",
+    ].join(",");
+  });
+  return [headers.join(","), ...rows].join("\n");
+}
+
 export async function generateCasePdf(caseId: string): Promise<PdfExportResult> {
   const { data, error } = await supabase.functions.invoke("export-case-pdf", {
     body: { caseId },

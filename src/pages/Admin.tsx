@@ -15,6 +15,8 @@ import {
   ToggleRight,
   Key,
   Clock,
+  Download,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,10 +37,14 @@ import {
   toggleAccessCode,
   resetAccessCodeUsage,
   getCodeRedemptionLogs,
+  getAllSubmissions,
+  computeSummaryMetrics,
+  submissionsToCsv,
   VerificationQuestion,
   UserProfile,
   AccessCodeRow,
   CodeRedemptionLog,
+  SummaryMetrics,
 } from "@/services/database";
 import {
   Dialog,
@@ -102,6 +108,12 @@ const Admin = () => {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
+  // Metrics + CSV
+  const [allSubmissions, setAllSubmissions] = useState<CaseSubmission[]>([]);
+  const [metrics, setMetrics] = useState<SummaryMetrics | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -146,6 +158,7 @@ const Admin = () => {
       getAdminStats(),
       getAccessCodes(),
       getCodeRedemptionLogs(),
+      getAllSubmissions(),
     ]);
     if (results[0].status === "fulfilled") setQuestions(results[0].value);
     if (results[1].status === "fulfilled") setProfiles(results[1].value);
@@ -153,6 +166,12 @@ const Admin = () => {
     if (results[3].status === "fulfilled") setStats(results[3].value);
     if (results[4].status === "fulfilled") setAccessCodes(results[4].value);
     if (results[5].status === "fulfilled") setRedemptionLogs(results[5].value);
+    if (results[6].status === "fulfilled") {
+      const allSubs = results[6].value;
+      setAllSubmissions(allSubs);
+      const logs = results[5].status === "fulfilled" ? results[5].value : [];
+      setMetrics(computeSummaryMetrics(allSubs, logs));
+    }
     const failures = results.filter((r) => r.status === "rejected");
     if (failures.length > 0) {
       failures.forEach((f) => console.error("Dashboard load error:", (f as PromiseRejectedResult).reason));
@@ -243,6 +262,32 @@ const Admin = () => {
       toast({ title: "Reset", description: `Usage count reset for ${code.code}.` });
     } catch {
       toast({ title: "Error", description: "Failed to reset code usage.", variant: "destructive" });
+    }
+  };
+
+  // CSV Export
+  const handleCsvExport = () => {
+    const csv = submissionsToCsv(allSubmissions);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `ethical-insight-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: "CSV Exported", description: `${allSubmissions.length} records exported.` });
+  };
+
+  // Metrics date filtering
+  const handleMetricsFilter = async () => {
+    try {
+      const subs = await getAllSubmissions(dateFrom || undefined, dateTo || undefined);
+      setAllSubmissions(subs);
+      setMetrics(computeSummaryMetrics(subs, redemptionLogs));
+    } catch {
+      toast({ title: "Error", description: "Failed to filter data.", variant: "destructive" });
     }
   };
 
@@ -382,6 +427,8 @@ const Admin = () => {
                   <TabsTrigger value="submissions">Submissions</TabsTrigger>
                   <TabsTrigger value="codes">Access Codes</TabsTrigger>
                   <TabsTrigger value="logs">Usage Logs</TabsTrigger>
+                  <TabsTrigger value="metrics">Summary Metrics</TabsTrigger>
+                  <TabsTrigger value="export">CSV Export</TabsTrigger>
                 </TabsList>
 
                 {/* Verification Questions Tab */}
@@ -659,6 +706,156 @@ const Admin = () => {
                               </TableRow>
                             ))
                           )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Summary Metrics Tab */}
+                <TabsContent value="metrics">
+                  <div className="card-professional p-6">
+                    <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5" />
+                      Summary Metrics
+                    </h2>
+                    <div className="flex flex-wrap gap-3 mb-6">
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm text-muted-foreground">From:</label>
+                        <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-40" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm text-muted-foreground">To:</label>
+                        <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-40" />
+                      </div>
+                      <Button variant="outline" size="sm" onClick={handleMetricsFilter}>Apply Filter</Button>
+                      <Button variant="ghost" size="sm" onClick={() => { setDateFrom(""); setDateTo(""); loadData(); }}>Clear</Button>
+                    </div>
+                    {metrics && (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                          <div className="border rounded-lg p-4 text-center">
+                            <p className="text-2xl font-bold">{metrics.totalSubmissions}</p>
+                            <p className="text-sm text-muted-foreground">Total Submissions</p>
+                          </div>
+                          <div className="border rounded-lg p-4 text-center">
+                            <p className="text-2xl font-bold text-green-600">{metrics.stabilityDistribution.stable}</p>
+                            <p className="text-sm text-muted-foreground">Ethically Stable</p>
+                          </div>
+                          <div className="border rounded-lg p-4 text-center">
+                            <p className="text-2xl font-bold text-yellow-600">{metrics.stabilityDistribution.contested}</p>
+                            <p className="text-sm text-muted-foreground">Ethically Contested</p>
+                          </div>
+                          <div className="border rounded-lg p-4 text-center">
+                            <p className="text-2xl font-bold text-red-600">{metrics.stabilityDistribution.unstable}</p>
+                            <p className="text-sm text-muted-foreground">Ethically Unstable</p>
+                          </div>
+                        </div>
+                        <h3 className="font-semibold mb-2">Violation Frequency by Professional Code</h3>
+                        <div className="overflow-x-auto mb-6">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Professional Code</TableHead>
+                                <TableHead>Violations</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {Object.keys(metrics.violationsByCode).length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={2} className="text-center text-muted-foreground py-4">No violations recorded.</TableCell>
+                                </TableRow>
+                              ) : (
+                                Object.entries(metrics.violationsByCode).map(([code, count]) => (
+                                  <TableRow key={code}>
+                                    <TableCell className="font-medium">{code}</TableCell>
+                                    <TableCell>{count}</TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
+                        <h3 className="font-semibold mb-2">Access Code Redemption Counts</h3>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Access Code</TableHead>
+                                <TableHead>Redemptions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {Object.keys(metrics.accessCodeRedemptions).length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={2} className="text-center text-muted-foreground py-4">No redemptions recorded.</TableCell>
+                                </TableRow>
+                              ) : (
+                                Object.entries(metrics.accessCodeRedemptions).map(([code, count]) => (
+                                  <TableRow key={code}>
+                                    <TableCell className="font-mono text-sm">{code}</TableCell>
+                                    <TableCell>{count}</TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* CSV Export Tab */}
+                <TabsContent value="export">
+                  <div className="card-professional p-6">
+                    <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Download className="w-5 h-5" />
+                      CSV Export
+                    </h2>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Export all case submissions with analysis data as a CSV file. Includes: Case ID, Timestamp, Professional Codes, all six lens scores, Composite Score, Stability, Violation details, Conflict Level, and Algorithm Version.
+                    </p>
+                    <div className="flex items-center gap-4 mb-6">
+                      <Button onClick={handleCsvExport} disabled={allSubmissions.length === 0} className="gap-2">
+                        <Download className="w-4 h-4" />
+                        Export {allSubmissions.length} Record{allSubmissions.length !== 1 ? "s" : ""} to CSV
+                      </Button>
+                    </div>
+                    <h3 className="font-semibold mb-2">CSV Columns</h3>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Column</TableHead>
+                            <TableHead>Description</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {[
+                            ["Case ID", "Unique submission identifier"],
+                            ["Timestamp", "Submission date/time"],
+                            ["Title", "Case title"],
+                            ["Professional Codes", "Selected professional codes (semicolon-separated)"],
+                            ["Utilitarian", "Utilitarian lens score (1-10)"],
+                            ["Duty", "Deontological / Duty lens score (1-10)"],
+                            ["Justice", "Justice / Fairness lens score (1-10)"],
+                            ["Virtue", "Virtue lens score (1-10)"],
+                            ["Care", "Care lens score (1-10)"],
+                            ["Common Good", "Common Good lens score (1-10)"],
+                            ["Composite Score", "Weighted composite (70% code + 30% lens)"],
+                            ["Stability", "Ethically Stable / Contested / Unstable"],
+                            ["Violation", "Yes / No"],
+                            ["Violation Severity", "none / single_violation / multi_violation"],
+                            ["Violated Codes", "Which professional codes were violated"],
+                            ["Conflict Level", "1-6 conflict severity"],
+                            ["Algorithm Version", "Version of the analysis algorithm"],
+                          ].map(([col, desc]) => (
+                            <TableRow key={col}>
+                              <TableCell className="font-mono text-sm">{col}</TableCell>
+                              <TableCell className="text-muted-foreground">{desc}</TableCell>
+                            </TableRow>
+                          ))}
                         </TableBody>
                       </Table>
                     </div>
