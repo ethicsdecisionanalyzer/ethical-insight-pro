@@ -382,12 +382,12 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background-light">
+    <div className="min-h-screen flex flex-col bg-background-light/50">
       {/* Header */}
-      <header className="bg-card border-b border-border py-4">
-        <div className="container mx-auto px-4 flex justify-between items-center">
+      <header className="bg-card/80 backdrop-blur-md border-b border-border/50 sticky top-0 z-10 py-4">
+        <div className="container mx-auto px-6 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Admin Dashboard</h1>
             <p className="text-sm text-muted-foreground">
               {new Date().toLocaleDateString("en-US", {
                 weekday: "long",
@@ -397,12 +397,12 @@ const Admin = () => {
               })}
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/case-intake")}>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => navigate("/case-intake")} className="rounded-xl shadow-sm hover:shadow transition-all">
               <FileText className="w-4 h-4 mr-2" />
               Submit Case
             </Button>
-            <Button variant="outline" onClick={handleLogout}>
+            <Button variant="outline" onClick={handleLogout} className="rounded-xl shadow-sm hover:shadow transition-all">
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
@@ -411,7 +411,7 @@ const Admin = () => {
       </header>
 
       <main className="flex-1 py-8">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6">
           {loading ? (
             <div className="flex justify-center py-20">
               <Spinner size="lg" />
@@ -419,22 +419,22 @@ const Admin = () => {
           ) : (
             <>
               {/* Stats Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard icon={<Users className="w-6 h-6" />} value={stats.totalUsers} label="Total Users" color="default" />
                 <StatCard icon={<CheckCircle className="w-6 h-6" />} value={stats.verifiedUsers} label="Verified Users" color="success" />
                 <StatCard icon={<FileText className="w-6 h-6" />} value={stats.totalSubmissions} label="Cases Submitted" color="default" />
                 <StatCard icon={<BookOpen className="w-6 h-6" />} value={stats.activeQuestions} label="Active Questions" color="primary" />
               </div>
 
-              <Tabs defaultValue="questions" className="space-y-6">
-                <TabsList>
-                  <TabsTrigger value="questions">Verification Questions</TabsTrigger>
-                  <TabsTrigger value="users">Users</TabsTrigger>
-                  <TabsTrigger value="submissions">Submissions</TabsTrigger>
-                  <TabsTrigger value="codes">Access Codes</TabsTrigger>
-                  <TabsTrigger value="logs">Usage Logs</TabsTrigger>
-                  <TabsTrigger value="metrics">Summary Metrics</TabsTrigger>
-                  <TabsTrigger value="export">CSV Export</TabsTrigger>
+              <Tabs defaultValue="questions" className="space-y-8">
+                <TabsList className="bg-muted/50 p-1 rounded-xl">
+                  <TabsTrigger value="questions" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Verification Questions</TabsTrigger>
+                  <TabsTrigger value="users" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Users</TabsTrigger>
+                  <TabsTrigger value="submissions" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Submissions</TabsTrigger>
+                  <TabsTrigger value="codes" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Access Codes</TabsTrigger>
+                  <TabsTrigger value="logs" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Usage Logs</TabsTrigger>
+                  <TabsTrigger value="metrics" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Summary Metrics</TabsTrigger>
+                  <TabsTrigger value="export" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">CSV Export</TabsTrigger>
                 </TabsList>
 
                 {/* Verification Questions Tab */}
@@ -963,12 +963,14 @@ function StatCard({ icon, value, label, color }: StatCardProps) {
   };
 
   return (
-    <div className="card-professional p-5">
-      <div className="flex items-center justify-between mb-2">
-        <span className={colorClasses[color]}>{icon}</span>
+    <div className="card-professional p-6 flex flex-col justify-between h-full transition-transform hover:translate-y-[-2px]">
+      <div className="flex items-center justify-between mb-4">
+        <span className={`${colorClasses[color]} p-2 bg-muted/30 rounded-xl`}>{icon}</span>
       </div>
-      <p className="text-3xl font-bold text-foreground">{value}</p>
-      <p className="text-sm text-muted-foreground mt-1">{label}</p>
+      <div>
+        <p className="text-4xl font-bold tracking-tight text-foreground">{value}</p>
+        <p className="text-sm font-medium text-muted-foreground mt-1">{label}</p>
+      </div>
     </div>
   );
 }
