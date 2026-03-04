@@ -41,17 +41,14 @@ const CaseIntake = () => {
 
   const isFormValid = title.trim() && narrative.trim() && selectedCodes.length > 0 && consentNoConfidential && consentAggregateUse;
 
-  // Require auth; redirect admins to admin dashboard
+  // Require auth
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       navigate("/login");
       return;
     }
-    if (isAdmin === true) {
-      navigate("/admin", { replace: true });
-    }
-  }, [authLoading, user, isAdmin, navigate]);
+  }, [authLoading, user, navigate]);
 
   if (!authLoading && !user) return null;
 
