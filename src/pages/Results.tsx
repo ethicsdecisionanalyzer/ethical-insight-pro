@@ -23,7 +23,7 @@ const POLL_INTERVAL = 3000;
 
 const Results = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const [searchParams] = useSearchParams();
   const caseId = searchParams.get("case_id");
   const sessionId = searchParams.get("session_id");
@@ -119,9 +119,9 @@ const Results = () => {
           <div className="text-center max-w-md">
             <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-foreground mb-2">{error}</h2>
-            <Button onClick={() => navigate("/")} variant="outline" className="mt-4 gap-2">
+            <Button onClick={() => navigate(isAdmin ? "/admin" : "/case-intake")} variant="outline" className="mt-4 gap-2">
               <ArrowLeft className="w-4 h-4" />
-              Return Home
+              {isAdmin ? "Back to Dashboard" : "Submit Another Case"}
             </Button>
           </div>
         </main>
@@ -160,9 +160,9 @@ const Results = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             {/* Back button */}
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="mb-4 gap-1 print:hidden">
+            <Button variant="ghost" size="sm" onClick={() => navigate(isAdmin ? "/admin" : "/case-intake")} className="mb-4 gap-1 print:hidden">
               <ArrowLeft className="w-4 h-4" />
-              Back
+              {isAdmin ? "Back to Dashboard" : "Back"}
             </Button>
 
             <h1 className="text-2xl font-bold text-foreground mb-6">Ethics Analysis Results</h1>

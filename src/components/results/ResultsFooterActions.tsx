@@ -4,6 +4,7 @@ import { FileDown, Printer, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { generateCasePdf } from "@/services/database";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ResultsFooterActionsProps {
   caseId: string;
@@ -11,6 +12,7 @@ interface ResultsFooterActionsProps {
 
 export function ResultsFooterActions({ caseId }: ResultsFooterActionsProps) {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [exporting, setExporting] = useState(false);
 
   const handleExportPdf = async () => {
@@ -47,9 +49,9 @@ export function ResultsFooterActions({ caseId }: ResultsFooterActionsProps) {
           <Printer className="w-4 h-4" />
           Print
         </Button>
-        <Button onClick={() => navigate("/")} variant="outline" className="gap-2">
+        <Button onClick={() => navigate(isAdmin ? "/admin" : "/case-intake")} variant="outline" className="gap-2">
           <ArrowLeft className="w-4 h-4" />
-          Analyze Another Case
+          {isAdmin ? "Back to Dashboard" : "Analyze Another Case"}
         </Button>
       </div>
       <p className="text-xs text-muted-foreground text-center max-w-lg mx-auto">

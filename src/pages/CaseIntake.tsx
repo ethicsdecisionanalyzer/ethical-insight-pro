@@ -132,7 +132,7 @@ const CaseIntake = () => {
   };
 
   const confirmCancel = () => {
-    navigate("/");
+    navigate(isAdmin ? "/admin" : "/");
   };
 
   return (
