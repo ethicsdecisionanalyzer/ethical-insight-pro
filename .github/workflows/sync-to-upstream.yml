@@ -9,6 +9,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - run: |
           git remote add upstream https://x-access-token:${{ secrets.UPSTREAM_PAT }}@github.com/ethicsdecisionanalyzer/ethical-insight-pro.git
           git push upstream main --force
