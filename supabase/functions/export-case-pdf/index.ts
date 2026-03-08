@@ -314,7 +314,7 @@ serve(async (req) => {
     // ===== Save + Upload =====
     const pdfBytes = await doc.save();
 
-    const hashBuf = await crypto.subtle.digest("SHA-256", pdfBytes);
+    const hashBuf = await crypto.subtle.digest("SHA-256", pdfBytes as unknown as ArrayBuffer);
     const sha256 = Array.from(new Uint8Array(hashBuf))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
