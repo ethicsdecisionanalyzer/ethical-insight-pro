@@ -234,25 +234,29 @@ function applyGuardrails(
     (f: string) => typeof f === "string" && f.toLowerCase().includes("violation")
   );
 
+  // violationSeverity is the PRIMARY determinant of codeScore.
+  // hasViolation/flagsIndicateViolation are fallbacks only when severity is missing.
+  const violatedCodes = (violationDetection.violatedCodes as string[]) || [];
   let codeScore: number;
-  if (violationSeverity === "multi_violation" || (hasViolation && flagsIndicateViolation)) {
-    // Check if multi-code
-    const violatedCodes = (violationDetection.violatedCodes as string[]) || [];
-    if (violatedCodes.length >= 2 || violationSeverity === "multi_violation") {
-      codeScore = 1;
-    } else {
-      codeScore = 3;
-    }
-  } else if (violationSeverity === "single_violation" || hasViolation) {
+  if (violationSeverity === "multi_violation" || violatedCodes.length >= 2) {
+    codeScore = 1;
+  } else if (violationSeverity === "single_violation") {
     codeScore = 3;
   } else if (violationSeverity === "tension") {
     codeScore = 6;
+  } else if (violationSeverity === "none" && !hasViolation && !flagsIndicateViolation) {
+    codeScore = 9;
+  } else if (hasViolation || flagsIndicateViolation) {
+    // Fallback: AI set hasViolation but didn't set a recognized severity
+    codeScore = 3;
   } else {
     codeScore = 9;
   }
 
-  const anyViolation = hasViolation || flagsIndicateViolation ||
-    violationSeverity === "single_violation" || violationSeverity === "multi_violation";
+  const anyViolation = violationSeverity === "single_violation" ||
+    violationSeverity === "multi_violation" ||
+    (hasViolation && violationSeverity !== "tension" && violationSeverity !== "none") ||
+    (flagsIndicateViolation && violationSeverity !== "tension");
 
   // 4. Compute components
   const lensComponent = lensAverage * 0.30;
@@ -282,7 +286,6 @@ function applyGuardrails(
   }
 
   // Multi-code violation override
-  const violatedCodes = (violationDetection.violatedCodes as string[]) || [];
   if (violatedCodes.length >= 2) {
     conflictLevel = 3;
     ethicalStability = "Ethically Unstable";
@@ -355,7 +358,7 @@ serve(async (req) => {
           ],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 4096,
+            maxOutputTokens: 8192,
             responseMimeType: "application/json",
           },
         }),
@@ -389,7 +392,23 @@ serve(async (req) => {
       analysisJson = jsonMatch[1].trim();
     }
 
-    const aiOutput = JSON.parse(analysisJson);
+    // Sanitize common issues: control characters inside JSON string values
+    analysisJson = analysisJson.replace(/[\x00-\x1F\x7F]/g, (ch) =>
+      ch === "\n" || ch === "\r" || ch === "\t" ? ch : ""
+    );
+
+    let aiOutput: Record<string, unknown>;
+    try {
+      aiOutput = JSON.parse(analysisJson);
+    } catch (parseErr) {
+      console.error("JSON parse failed, attempting recovery. Raw:", analysisJson.slice(0, 500));
+      // Try fixing unescaped newlines inside strings
+      const fixed = analysisJson.replace(
+        /("(?:[^"\\]|\\.)*")/g,
+        (match) => match.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t")
+      );
+      aiOutput = JSON.parse(fixed);
+    }
 
     // ===== DETERMINISTIC GUARDRAILS (Algorithm v2.0) =====
     const enforced = applyGuardrails(aiOutput);
