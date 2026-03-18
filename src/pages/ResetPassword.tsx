@@ -14,20 +14,28 @@ const ResetPassword = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     const hash = window.location.hash;
     const params = new URLSearchParams(window.location.search);
     if (hash.includes("type=recovery") || params.get("type") === "recovery") {
       setIsRecovery(true);
+      setChecking(false);
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setIsRecovery(true);
       }
+      setChecking(false);
     });
-    return () => subscription.unsubscribe();
+
+    const timeout = setTimeout(() => setChecking(false), 3000);
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleReset = async (e: React.FormEvent) => {
@@ -54,6 +62,18 @@ const ResetPassword = () => {
     }
     setLoading(false);
   };
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background-light">
+        <Header variant="landing" />
+        <main className="flex-1 flex items-center justify-center px-4">
+          <p className="text-muted-foreground">Verifying reset link...</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!isRecovery && !success) {
     return (
