@@ -63,10 +63,24 @@ CRITICAL: You provide QUALITATIVE REASONING and NUMERIC ALIGNMENT SCORES (1-10 i
    Use analytical, professional language with probabilistic or conditional phrasing where appropriate.
    Avoid overly definitive statements unless warranted and alarmist or exaggerated conclusions.
 
+7. RESIDUAL TENSION PRINCIPLE:
+   Responsible handling of constrained conditions (incomplete data, time pressure,
+   resource limitations) MITIGATES but does NOT ELIMINATE ethical tension.
+
+   When constrained conditions exist:
+   - If handled responsibly → violationSeverity should be "tension" (not "none")
+   - Lens scores should reflect moderate alignment (5-7), not high alignment (8-10)
+   - The underlying constraints still create legitimate ethical tension regardless
+     of how well the professional responds
+
+   Only assign violationSeverity "none" when:
+   - The scenario has no significant constraints or pressures, OR
+   - All relevant data is available and conditions are fully favorable
+
 ## CLASSIFICATION LOGIC (for violation detection guidance)
 Apply labels as follows:
-- "none" → minimal conflict, strong alignment across lenses
-- "tension" → legitimate tension between values, defensible options exist
+- "none" → minimal conflict, strong alignment across lenses, NO significant constraints or pressures present
+- "tension" → legitimate tension between values, defensible options exist. Also applies when constrained conditions exist (incomplete data, pressure, resource limits) even when handled responsibly with disclosure and conservative assumptions — residual uncertainty means ethical tension persists
 - "single_violation" / "multi_violation" → clear breach of professional codes, intentional or negligent misconduct
 Note: Final stability classification is computed deterministically by the guardrails layer. This guidance applies to your violationSeverity determination only.
 

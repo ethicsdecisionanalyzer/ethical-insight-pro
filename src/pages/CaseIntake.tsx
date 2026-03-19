@@ -117,8 +117,10 @@ const CaseIntake = () => {
       } catch (analysisErr) {
         console.error("Analysis error:", analysisErr);
         setSubmissionState("success");
-        toast({ title: "Note", description: "Case submitted but analysis is pending. You can view results later." });
-        setTimeout(() => navigate("/"), 2000);
+        toast({ title: "Note", description: "Case submitted — redirecting to results. The page will update automatically when analysis completes." });
+        setTimeout(() => {
+          navigate(`/results?case_id=${submission.id}&session_id=${sessionId}`);
+        }, 2000);
       }
     } catch (err) {
       console.error("Submission error:", err);
